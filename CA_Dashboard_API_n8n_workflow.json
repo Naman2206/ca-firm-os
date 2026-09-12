@@ -1,0 +1,132 @@
+{
+  "name": "CA Dashboard API",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "ca-dashboard",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "0c4d7ef7-0be6-4cb3-9ad2-1ef2c83bb001",
+      "name": "Dashboard API Request",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-1200, 0]
+    },
+    {
+      "parameters": {
+        "resource": "sheet",
+        "operation": "read",
+        "documentId": { "__rl": true, "mode": "id", "value": "GOOGLE_SHEET_ID_CA_FIRM_DB" },
+        "sheetName": { "__rl": true, "mode": "name", "value": "Clients", "cachedResultName": "Clients" },
+        "options": {}
+      },
+      "id": "0c4d7ef7-0be6-4cb3-9ad2-1ef2c83bb002",
+      "name": "Read Clients",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [-980, 0],
+      "credentials": { "googleSheetsOAuth2Api": { "id": "GOOGLE_SHEETS_CRED_ID", "name": "Google Sheets - CA Firm" } }
+    },
+    {
+      "parameters": {
+        "resource": "sheet",
+        "operation": "read",
+        "documentId": { "__rl": true, "mode": "id", "value": "GOOGLE_SHEET_ID_CA_FIRM_DB" },
+        "sheetName": { "__rl": true, "mode": "name", "value": "Compliance_Calendar", "cachedResultName": "Compliance_Calendar" },
+        "options": {}
+      },
+      "id": "0c4d7ef7-0be6-4cb3-9ad2-1ef2c83bb003",
+      "name": "Read Compliance",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [-760, 0],
+      "credentials": { "googleSheetsOAuth2Api": { "id": "GOOGLE_SHEETS_CRED_ID", "name": "Google Sheets - CA Firm" } }
+    },
+    {
+      "parameters": {
+        "resource": "sheet",
+        "operation": "read",
+        "documentId": { "__rl": true, "mode": "id", "value": "GOOGLE_SHEET_ID_CA_FIRM_DB" },
+        "sheetName": { "__rl": true, "mode": "name", "value": "Documents_Tracker", "cachedResultName": "Documents_Tracker" },
+        "options": {}
+      },
+      "id": "0c4d7ef7-0be6-4cb3-9ad2-1ef2c83bb004",
+      "name": "Read Documents",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [-540, 0],
+      "credentials": { "googleSheetsOAuth2Api": { "id": "GOOGLE_SHEETS_CRED_ID", "name": "Google Sheets - CA Firm" } }
+    },
+    {
+      "parameters": {
+        "resource": "sheet",
+        "operation": "read",
+        "documentId": { "__rl": true, "mode": "id", "value": "GOOGLE_SHEET_ID_CA_FIRM_DB" },
+        "sheetName": { "__rl": true, "mode": "name", "value": "Leads", "cachedResultName": "Leads" },
+        "options": {}
+      },
+      "id": "0c4d7ef7-0be6-4cb3-9ad2-1ef2c83bb005",
+      "name": "Read Leads",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [-320, 0],
+      "credentials": { "googleSheetsOAuth2Api": { "id": "GOOGLE_SHEETS_CRED_ID", "name": "Google Sheets - CA Firm" } }
+    },
+    {
+      "parameters": {
+        "resource": "sheet",
+        "operation": "read",
+        "documentId": { "__rl": true, "mode": "id", "value": "GOOGLE_SHEET_ID_CA_FIRM_DB" },
+        "sheetName": { "__rl": true, "mode": "name", "value": "Invoices", "cachedResultName": "Invoices" },
+        "options": {}
+      },
+      "id": "0c4d7ef7-0be6-4cb3-9ad2-1ef2c83bb006",
+      "name": "Read Invoices",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [-100, 0],
+      "credentials": { "googleSheetsOAuth2Api": { "id": "GOOGLE_SHEETS_CRED_ID", "name": "Google Sheets - CA Firm" } }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const rows = name => { try { return $(name).all().map(item => item.json); } catch (error) { return []; } };\nconst clients = rows('Read Clients');\nconst compliance = rows('Read Compliance');\nconst documents = rows('Read Documents');\nconst leads = rows('Read Leads');\nconst invoices = rows('Read Invoices');\nconst number = value => Number(String(value ?? 0).replace(/[^0-9.-]/g, '')) || 0;\nconst isOpen = value => !['paid', 'closed', 'completed', 'done', 'received', 'cold-closed'].includes(String(value || '').toLowerCase());\nconst today = new Date();\nconst daysUntil = value => { const date = new Date(value); return Number.isNaN(date.getTime()) ? 9999 : Math.ceil((date - today) / 86400000); };\nconst pendingCompliance = compliance.filter(row => isOpen(row.status));\nconst urgentCompliance = pendingCompliance.filter(row => daysUntil(row.due_date) <= 7).length;\nconst pendingInvoices = invoices.filter(row => isOpen(row.status));\nconst collected = invoices.filter(row => String(row.status || '').toLowerCase() === 'paid').reduce((sum, row) => sum + number(row.amount), 0);\nconst outstanding = pendingInvoices.reduce((sum, row) => sum + number(row.amount), 0);\nconst overdueClients = pendingInvoices.filter(row => daysUntil(row.due_date) < 0).length;\nconst tasks = [\n  ...pendingCompliance.map(row => ({ id: row.compliance_id, title: row.compliance_type || 'Compliance filing', client: row.client_name, due_date: row.due_date, status: row.status || 'Pending', priority: daysUntil(row.due_date) <= 3 ? 'Urgent' : 'High', source: 'Compliance' })),\n  ...documents.filter(row => isOpen(row.status)).map(row => ({ id: row.doc_id, title: `Collect ${row.document_name || 'document'}`, client: row.client_name, due_date: row.requested_date, status: row.status || 'Pending', priority: 'Medium', source: 'Documents' })),\n  ...pendingInvoices.filter(row => daysUntil(row.due_date) < 0).map(row => ({ id: row.invoice_id, title: `Follow up invoice ${row.invoice_id}`, client: row.client_name, due_date: row.due_date, status: row.status || 'Overdue', priority: 'Urgent', source: 'Invoices' }))\n].slice(0, 100);\nreturn [{ json: { clients: { total: clients.length, rows: clients, change: 'Live from Clients sheet' }, deadlines: { pending: pendingCompliance.length, urgent: urgentCompliance, rows: pendingCompliance }, invoices: { collected: `₹${(collected / 100000).toFixed(1)}L`, pending: `₹${(outstanding / 100000).toFixed(1)}L`, overdueClients, rows: invoices, change: 'Live from Invoices sheet' }, documents: { pending: documents.filter(row => isOpen(row.status)).length, rows: documents }, leads: { active: leads.filter(row => isOpen(row.status)).length, rows: leads }, tasks, reports: { complianceRate: compliance.length ? Math.round((compliance.filter(row => String(row.status || '').toLowerCase() === 'completed').length / compliance.length) * 100) : 0, automationHours: Math.round((documents.length + leads.length + compliance.length) * 0.25) }, generated_at: new Date().toISOString() } }];"
+      },
+      "id": "0c4d7ef7-0be6-4cb3-9ad2-1ef2c83bb007",
+      "name": "Build Dashboard Read Model",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [140, 0]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseCode": 200,
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": { "responseHeaders": { "entries": [{ "name": "Access-Control-Allow-Origin", "value": "*" }, { "name": "Cache-Control", "value": "no-store" }] } }
+      },
+      "id": "0c4d7ef7-0be6-4cb3-9ad2-1ef2c83bb008",
+      "name": "Return Dashboard JSON",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [360, 0]
+    }
+  ],
+  "connections": {
+    "Dashboard API Request": { "main": [[{ "node": "Read Clients", "type": "main", "index": 0 }]] },
+    "Read Clients": { "main": [[{ "node": "Read Compliance", "type": "main", "index": 0 }]] },
+    "Read Compliance": { "main": [[{ "node": "Read Documents", "type": "main", "index": 0 }]] },
+    "Read Documents": { "main": [[{ "node": "Read Leads", "type": "main", "index": 0 }]] },
+    "Read Leads": { "main": [[{ "node": "Read Invoices", "type": "main", "index": 0 }]] },
+    "Read Invoices": { "main": [[{ "node": "Build Dashboard Read Model", "type": "main", "index": 0 }]] },
+    "Build Dashboard Read Model": { "main": [[{ "node": "Return Dashboard JSON", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "0c4d7ef7-0be6-4cb3-9ad2-1ef2c83bb009",
+  "meta": { "templateCredsSetupCompleted": false },
+  "tags": []
+}

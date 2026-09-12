@@ -1,0 +1,2015 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CA Firm CRM – Intelligent Practice Management</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0F1A2E;
+    --navy-light: #162236;
+    --teal: #0EA5C9;
+    --teal-light: #E0F2FE;
+    --amber: #F59E0B;
+    --amber-light: #FEF3C7;
+    --emerald: #10B981;
+    --emerald-light: #D1FAE5;
+    --rose: #F43F5E;
+    --rose-light: #FFE4E6;
+    --violet: #8B5CF6;
+    --violet-light: #EDE9FE;
+    --slate: #64748B;
+    --slate-light: #F1F5F9;
+    --surface: #F8FAFC;
+    --white: #FFFFFF;
+    --border: #E2E8F0;
+    --text-primary: #0F172A;
+    --text-secondary: #475569;
+    --text-muted: #94A3B8;
+    --sidebar-w: 240px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: var(--surface); color: var(--text-primary); display: flex; height: 100vh; overflow: hidden; transition: background .2s,color .2s; }
+  body::before { content:'';position:fixed;inset:0;pointer-events:none;opacity:.38;background-image:linear-gradient(rgba(14,165,201,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(14,165,201,.035) 1px,transparent 1px);background-size:32px 32px; }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: var(--sidebar-w);
+    background: var(--navy);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    overflow-y: auto;
+  }
+
+  .sidebar-brand {
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .brand-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .brand-icon {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--teal), #0369A1);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 700; color: white;
+    font-family: 'Space Grotesk', sans-serif;
+  }
+  .brand-text { color: white; }
+  .brand-name { font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 700; line-height: 1.1; }
+  .brand-sub { font-size: 10px; color: rgba(255,255,255,0.45); letter-spacing: 0.5px; }
+
+  .sidebar-section { padding: 16px 12px 4px; }
+  .sidebar-section-label { font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.3); letter-spacing: 1.2px; text-transform: uppercase; padding: 0 8px; margin-bottom: 6px; }
+
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.18s;
+    margin-bottom: 2px;
+    color: rgba(255,255,255,0.55);
+    font-size: 13.5px; font-weight: 500;
+    position: relative;
+  }
+  .nav-item:hover { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.9); }
+  .nav-item.active { background: rgba(14,165,201,0.18); color: var(--teal); }
+  .nav-item.active::before { content:''; position:absolute; left:0; top:50%; transform:translateY(-50%); width:3px; height:60%; background:var(--teal); border-radius:0 3px 3px 0; }
+  .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+  .nav-badge { margin-left: auto; background: var(--rose); color: white; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 999px; }
+  .nav-badge.amber { background: var(--amber); color: #78350F; }
+  .nav-badge.teal { background: var(--teal); color: white; }
+
+  .sidebar-footer {
+    margin-top: auto;
+    padding: 16px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+  }
+  .user-card { display: flex; align-items: center; gap: 10px; }
+  .user-avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #7C3AED, #A78BFA); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: white; }
+  .user-info { flex: 1; min-width: 0; }
+  .user-name { font-size: 12.5px; font-weight: 600; color: white; }
+  .user-role { font-size: 10.5px; color: rgba(255,255,255,0.4); }
+
+  /* ── MAIN ── */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* TOPBAR */
+  .topbar {
+    background: white;
+    border-bottom: 1px solid var(--border);
+    padding: 0 28px;
+    height: 60px;
+    display: flex; align-items: center; gap: 16px;
+    flex-shrink: 0;
+  }
+  .topbar-title { font-family: 'Space Grotesk', sans-serif; font-size: 17px; font-weight: 700; color: var(--text-primary); }
+  .topbar-subtitle { font-size: 12.5px; color: var(--text-muted); margin-left: 4px; }
+  .topbar-actions { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .search-box { display: flex; align-items: center; gap: 8px; background: var(--slate-light); border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; }
+  .search-box input { border: none; background: transparent; font-size: 13px; color: var(--text-primary); outline: none; width: 180px; }
+  .search-box input::placeholder { color: var(--text-muted); }
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 7px; font-size: 13px; font-weight: 500; cursor: pointer; border: none; transition: all 0.15s; }
+  .btn-primary { background: var(--teal); color: white; }
+  .btn-primary:hover { background: #0284C7; }
+  .btn-outline { background: white; color: var(--text-secondary); border: 1px solid var(--border); }
+  .btn-outline:hover { background: var(--slate-light); }
+  .notif-btn { width: 36px; height: 36px; border-radius: 8px; background: var(--slate-light); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; font-size: 15px; }
+  .notif-dot { position: absolute; top: 7px; right: 7px; width: 7px; height: 7px; background: var(--rose); border-radius: 50%; border: 1.5px solid white; }
+
+  /* CONTENT */
+  .content { flex: 1; overflow-y: auto; padding: 24px 28px; }
+
+  /* ── VIEWS ── */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* DASHBOARD */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+  .stat-card {
+    background: white; border-radius: 12px; padding: 18px 20px;
+    border: 1px solid var(--border);
+    position: relative; overflow: hidden; box-shadow:0 6px 18px rgba(15,26,46,.04);
+  }
+  .stat-card::after { content:''; position:absolute; top:0;right:0; width:80px; height:100%; opacity: 0.06; border-radius: 0 12px 12px 0; }
+  .stat-card.teal::after { background: var(--teal); }
+  .stat-card.amber::after { background: var(--amber); }
+  .stat-card.emerald::after { background: var(--emerald); }
+  .stat-card.rose::after { background: var(--rose); }
+  .stat-label { font-size: 11.5px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .stat-value { font-family: 'Space Grotesk', sans-serif; font-size: 28px; font-weight: 700; color: var(--text-primary); line-height: 1; }
+  .stat-change { font-size: 11.5px; margin-top: 6px; }
+  .stat-change.up { color: var(--emerald); }
+  .stat-change.down { color: var(--rose); }
+  .stat-icon { position: absolute; top: 18px; right: 20px; font-size: 22px; }
+
+  .dash-grid { display: grid; grid-template-columns: 1.6fr 1fr; gap: 16px; }
+  .card { background: white; border-radius: 12px; border: 1px solid var(--border); box-shadow:0 6px 18px rgba(15,26,46,.035); }
+  .card-header { padding: 16px 20px 14px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+  .card-title { font-family: 'Space Grotesk', sans-serif; font-size: 14.5px; font-weight: 600; }
+  .card-action { margin-left: auto; font-size: 12px; color: var(--teal); cursor: pointer; font-weight: 500; }
+  .card-body { padding: 16px 20px; }
+
+  /* TABLE */
+  table { width: 100%; border-collapse: collapse; }
+  th { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; padding: 0 12px 10px; text-align: left; }
+  td { padding: 10px 12px; font-size: 13px; border-bottom: 1px solid var(--slate-light); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--surface); }
+
+  /* BADGES */
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .badge-emerald { background: var(--emerald-light); color: #065F46; }
+  .badge-amber { background: var(--amber-light); color: #92400E; }
+  .badge-rose { background: var(--rose-light); color: #9F1239; }
+  .badge-teal { background: var(--teal-light); color: #0C4A6E; }
+  .badge-violet { background: var(--violet-light); color: #4C1D95; }
+  .badge-slate { background: var(--slate-light); color: var(--slate); }
+
+  /* DEADLINE ITEMS */
+  .deadline-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--slate-light); }
+  .deadline-item:last-child { border-bottom: none; }
+  .deadline-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .deadline-info { flex: 1; }
+  .deadline-name { font-size: 13px; font-weight: 500; }
+  .deadline-client { font-size: 11.5px; color: var(--text-muted); }
+  .deadline-date { font-size: 12px; font-weight: 600; text-align: right; }
+  .deadline-date.urgent { color: var(--rose); }
+  .deadline-date.soon { color: var(--amber); }
+  .deadline-date.ok { color: var(--emerald); }
+
+  /* ── AI SUPPORT AGENT ── */
+  .agent-layout { display: grid; grid-template-columns: 1fr 1.2fr; gap: 20px; }
+  .chat-container { background: white; border-radius: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; height: 520px; }
+  .chat-header { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+  .ai-indicator { width: 8px; height: 8px; background: var(--emerald); border-radius: 50%; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+  .chat-messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .msg { max-width: 80%; }
+  .msg-client { align-self: flex-end; }
+  .msg-ai { align-self: flex-start; }
+  .msg-bubble { padding: 10px 14px; border-radius: 12px; font-size: 13px; line-height: 1.55; }
+  .msg-client .msg-bubble { background: var(--teal); color: white; border-bottom-right-radius: 3px; }
+  .msg-ai .msg-bubble { background: var(--slate-light); color: var(--text-primary); border-bottom-left-radius: 3px; }
+  .msg-meta { font-size: 10.5px; color: var(--text-muted); margin-top: 4px; }
+  .msg-client .msg-meta { text-align: right; }
+  .chat-input-area { padding: 12px 16px; border-top: 1px solid var(--border); display: flex; gap: 8px; }
+  .chat-input { flex: 1; border: 1px solid var(--border); border-radius: 8px; padding: 9px 13px; font-size: 13px; font-family: inherit; outline: none; resize: none; }
+  .chat-input:focus { border-color: var(--teal); }
+  .send-btn { background: var(--teal); color: white; border: none; border-radius: 8px; padding: 0 16px; cursor: pointer; font-size: 16px; }
+
+  .agent-stats-col { display: flex; flex-direction: column; gap: 16px; }
+  .mini-stat { background: white; border: 1px solid var(--border); border-radius: 10px; padding: 16px; display: flex; align-items: center; gap: 14px; }
+  .mini-stat-icon { width: 40px; height: 40px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .mini-stat-info .value { font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 700; }
+  .mini-stat-info .label { font-size: 12px; color: var(--text-muted); }
+
+  .faq-list { background: white; border: 1px solid var(--border); border-radius: 12px; }
+  .faq-item { padding: 12px 16px; border-bottom: 1px solid var(--slate-light); display: flex; align-items: center; gap: 10px; cursor: pointer; transition: background 0.15s; }
+  .faq-item:last-child { border-bottom: none; }
+  .faq-item:hover { background: var(--surface); }
+  .faq-q { font-size: 13px; flex: 1; }
+  .faq-count { font-size: 11.5px; color: var(--text-muted); font-weight: 600; }
+
+  /* ── DOCUMENTS ── */
+  .doc-filters { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+  .filter-tab { padding: 6px 14px; border-radius: 20px; font-size: 12.5px; font-weight: 500; cursor: pointer; border: 1.5px solid var(--border); background: white; color: var(--text-secondary); transition: all 0.15s; }
+  .filter-tab.active { border-color: var(--teal); background: var(--teal-light); color: #0C4A6E; }
+
+  .client-doc-card { background: white; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 14px; overflow: hidden; }
+  .client-doc-header { padding: 14px 18px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--slate-light); }
+  .client-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: white; flex-shrink: 0; }
+  .client-info .name { font-size: 14px; font-weight: 600; }
+  .client-info .meta { font-size: 11.5px; color: var(--text-muted); }
+  .client-doc-body { padding: 14px 18px; }
+  .doc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+  .doc-item { border: 1.5px solid var(--border); border-radius: 8px; padding: 10px; text-align: center; position: relative; }
+  .doc-item.received { border-color: var(--emerald); background: var(--emerald-light); }
+  .doc-item.missing { border-color: var(--rose); background: var(--rose-light); border-style: dashed; }
+  .doc-item.pending { border-color: var(--amber); background: var(--amber-light); }
+  .doc-icon { font-size: 22px; margin-bottom: 4px; }
+  .doc-name { font-size: 11px; font-weight: 500; line-height: 1.3; }
+  .doc-status-icon { position: absolute; top: 5px; right: 5px; font-size: 13px; }
+  .progress-bar { height: 5px; background: var(--slate-light); border-radius: 99px; margin-top: 10px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--teal), var(--emerald)); transition: width 0.5s; }
+
+  /* ── COMPLIANCE ── */
+  .timeline-container { position: relative; }
+  .month-header { font-family: 'Space Grotesk', sans-serif; font-size: 13px; font-weight: 700; color: var(--text-muted); padding: 10px 0 8px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); margin-bottom: 12px; }
+  .compliance-item { background: white; border: 1px solid var(--border); border-radius: 10px; padding: 14px 18px; margin-bottom: 10px; display: flex; align-items: center; gap: 14px; }
+  .compliance-item.urgent { border-left: 4px solid var(--rose); }
+  .compliance-item.warning { border-left: 4px solid var(--amber); }
+  .compliance-item.ok { border-left: 4px solid var(--emerald); }
+  .compliance-item.done { border-left: 4px solid var(--slate); opacity: 0.65; }
+  .comp-type-icon { width: 38px; height: 38px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+  .comp-info { flex: 1; }
+  .comp-title { font-size: 13.5px; font-weight: 600; }
+  .comp-meta { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .comp-due { text-align: right; }
+  .comp-due-date { font-size: 13px; font-weight: 700; }
+  .comp-due-label { font-size: 11px; color: var(--text-muted); }
+  .comp-actions { display: flex; gap: 6px; }
+  .icon-btn { width: 30px; height: 30px; border-radius: 6px; border: 1px solid var(--border); background: white; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 13px; transition: all 0.15s; }
+  .icon-btn:hover { background: var(--slate-light); }
+
+  /* ── LEADS ── */
+  .kanban { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; height: calc(100vh - 200px); }
+  .kanban-col { background: var(--slate-light); border-radius: 12px; padding: 14px; overflow-y: auto; }
+  .kanban-col-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .kanban-col-title { font-size: 13px; font-weight: 600; }
+  .kanban-count { font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 20px; }
+  .lead-card { background: white; border: 1px solid var(--border); border-radius: 9px; padding: 13px; margin-bottom: 10px; cursor: pointer; transition: all 0.15s; }
+  .lead-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); transform: translateY(-1px); }
+  .lead-name { font-size: 13.5px; font-weight: 600; margin-bottom: 4px; }
+  .lead-service { font-size: 11.5px; color: var(--text-muted); }
+  .lead-footer { display: flex; align-items: center; gap: 6px; margin-top: 10px; }
+  .lead-value { font-size: 12px; font-weight: 700; color: var(--emerald); margin-left: auto; }
+  .lead-source { font-size: 10.5px; padding: 2px 7px; border-radius: 20px; background: var(--slate-light); color: var(--text-muted); font-weight: 500; }
+  .lead-avatar { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; color: white; }
+  .score-bar { height: 3px; background: var(--slate-light); border-radius: 99px; margin-top: 8px; overflow: hidden; }
+  .score-fill { height: 100%; border-radius: 99px; }
+
+  /* ── INVOICES ── */
+  .invoice-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+  .inv-stat { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 18px; text-align: center; }
+  .inv-stat .amount { font-family: 'Space Grotesk', sans-serif; font-size: 26px; font-weight: 700; }
+  .inv-stat .inv-label { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+  .action-row { display: flex; gap: 8px; align-items: center; }
+  .reminder-btn { display: inline-flex; align-items: center; gap: 4px; padding: 5px 10px; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; border: none; }
+  .reminder-btn.wa { background: #25D366; color: white; }
+  .reminder-btn.email { background: var(--teal-light); color: #0C4A6E; }
+  .reminder-btn.call { background: var(--amber-light); color: #92400E; }
+
+  /* UTILITY */
+  .flex { display: flex; }
+  .items-center { align-items: center; }
+  .gap-2 { gap: 8px; }
+  .gap-3 { gap: 12px; }
+  .mt-2 { margin-top: 8px; }
+  .mt-4 { margin-top: 16px; }
+  .mb-4 { margin-bottom: 16px; }
+  .text-sm { font-size: 13px; }
+  .text-xs { font-size: 11.5px; }
+  .font-medium { font-weight: 500; }
+  .font-semibold { font-weight: 600; }
+  .text-muted { color: var(--text-muted); }
+
+  .section-title { font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+  .section-desc { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
+
+  /* EMPTY / TOOLTIP */
+  .tooltip-tag { display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; color: var(--text-muted); background: var(--slate-light); padding: 2px 8px; border-radius: 20px; }
+  .ai-tag { background: linear-gradient(90deg, #0EA5C9, #8B5CF6); color: white; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+  /* Modal */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(15,26,46,0.5); z-index: 1000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
+  .modal-overlay.open { display: flex; }
+  .modal { background: white; border-radius: 16px; padding: 28px; width: 460px; box-shadow: 0 24px 60px rgba(0,0,0,0.15); }
+  .modal-title { font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+  .form-group { margin-bottom: 14px; }
+  .form-label { font-size: 12.5px; font-weight: 500; color: var(--text-secondary); margin-bottom: 5px; display: block; }
+  .form-input { width: 100%; border: 1.5px solid var(--border); border-radius: 8px; padding: 9px 12px; font-size: 13.5px; font-family: inherit; outline: none; }
+  .form-input:focus { border-color: var(--teal); }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+
+  .ai-badge { display: inline-flex; align-items: center; gap: 4px; background: linear-gradient(90deg, #0EA5C9, #8B5CF6); color: white; font-size: 10.5px; font-weight: 600; padding: 2px 8px; border-radius: 20px; }
+
+  .typing-indicator { display: flex; gap: 4px; align-items: center; padding: 12px 14px; }
+  .typing-dot { width: 7px; height: 7px; background: var(--slate); border-radius: 50%; animation: typing 1.2s infinite; }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes typing { 0%,100%{transform:translateY(0);opacity:0.4;} 50%{transform:translateY(-4px);opacity:1;} }
+  .connection-status { display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--text-muted);white-space:nowrap; }
+  .connection-status::before { content:'';width:7px;height:7px;border-radius:50%;background:var(--amber); }
+  .connection-status.connected { color:var(--emerald); }
+  .connection-status.connected::before { background:var(--emerald); }
+  .connection-status.error { color:var(--rose); }
+  .connection-status.error::before { background:var(--rose); }
+  .settings-grid { display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:900px; }
+  .settings-panel { background:white;border:1px solid var(--border);border-radius:12px;padding:20px; }
+  .settings-panel h3 { font-family:'Space Grotesk',sans-serif;font-size:15px;margin-bottom:6px; }
+  .settings-panel p { font-size:12px;color:var(--text-muted);line-height:1.5;margin-bottom:14px; }
+  .theme-toggle { width:36px;height:36px;border:1px solid var(--border);border-radius:8px;background:white;cursor:pointer;font-size:15px; }
+  .theme-toggle:hover { border-color:var(--teal); }
+  .chart-card { min-height:290px; }
+  .bar-chart { height:170px;display:flex;align-items:end;gap:12px;padding:18px 8px 0;border-bottom:1px solid var(--border); }
+  .bar-wrap { flex:1;height:100%;display:flex;flex-direction:column;justify-content:end;align-items:center;gap:7px; }
+  .bar { width:100%;max-width:34px;border-radius:5px 5px 0 0;background:linear-gradient(180deg,var(--teal),#0C7494);min-height:8px;animation:grow .7s ease-out both; }
+  .bar-label { font-size:10px;color:var(--text-muted); }
+  @keyframes grow { from{height:0} }
+  .report-grid { display:grid;grid-template-columns:1.35fr 1fr 1fr;gap:16px;margin-bottom:16px; }
+  .progress-row { display:grid;grid-template-columns:100px 1fr 42px;gap:10px;align-items:center;margin:14px 0;font-size:12px; }
+  .progress-track { height:8px;background:var(--slate-light);border-radius:99px;overflow:hidden; }
+  .progress-track span { display:block;height:100%;background:var(--teal);border-radius:inherit; }
+  .data-toolbar { display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap; }
+  .data-toolbar .form-input { width:auto;min-width:170px; }
+  .task-row { display:grid;grid-template-columns:28px 1fr 120px 90px;gap:12px;align-items:center;padding:14px 0;border-bottom:1px solid var(--slate-light); }
+  .task-row:last-child { border-bottom:0; }
+  .task-check { width:18px;height:18px;accent-color:var(--teal); }
+  .task-title { font-size:13px;font-weight:600; }
+  .task-meta { font-size:11px;color:var(--text-muted);margin-top:3px; }
+  .theme-dark { --surface:#0D1724;--white:#132234;--border:#26384D;--slate-light:#18283A;--text-primary:#ECF4FA;--text-secondary:#B5C5D5;--text-muted:#7F95A9; }
+  .theme-dark .topbar,.theme-dark .card,.theme-dark .stat-card,.theme-dark .settings-panel,.theme-dark .modal,.theme-dark .client-doc-card,.theme-dark .faq-list,.theme-dark .chat-container,.theme-dark .mini-stat,.theme-dark .compliance-item,.theme-dark .lead-card,.theme-dark .inv-stat { background:var(--white); }
+  .theme-dark .theme-toggle,.theme-dark .btn-outline,.theme-dark .icon-btn,.theme-dark .form-input,.theme-dark .search-box { background:var(--white);color:var(--text-primary); }
+  .auth-overlay { position:fixed;inset:0;z-index:2000;display:flex;align-items:center;justify-content:center;background:#0F1A2E;overflow:auto;padding:24px; }
+  .auth-overlay.hidden { display:none; }
+  .auth-panel { width:min(430px,100%);background:#fff;border-radius:16px;padding:30px;box-shadow:0 24px 80px rgba(0,0,0,.28); }
+  .auth-brand { display:flex;align-items:center;gap:12px;margin-bottom:24px; }
+  .auth-brand .brand-icon { flex:none; }
+  .auth-kicker { color:var(--teal);font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase; }
+  .auth-title { font-family:'Space Grotesk',sans-serif;font-size:25px;margin:5px 0 7px;color:#0F172A; }
+  .auth-copy { color:#64748B;font-size:13px;line-height:1.5;margin-bottom:20px; }
+  .auth-error { display:none;background:#FFE4E6;color:#9F1239;border-radius:7px;padding:9px 11px;font-size:12px;margin-bottom:12px; }
+  .auth-error.visible { display:block; }
+  .tenant-pill { display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:8px;padding:6px 9px;font-size:11px;color:var(--text-secondary); }
+  .tenant-dot { width:7px;height:7px;background:var(--emerald);border-radius:50%; }
+  .account-menu { display:flex;align-items:center;gap:8px;margin-left:4px; }
+  .logout-btn { border:0;background:transparent;color:var(--text-muted);font-size:11px;cursor:pointer; }
+  .upload-zone { border:1.5px dashed var(--border);border-radius:10px;padding:18px;text-align:center;background:var(--surface);cursor:pointer; }
+  .upload-zone:hover { border-color:var(--teal);background:var(--teal-light); }
+  .client-detail-grid { display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:16px; }
+  .detail-stat { background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px; }
+  .detail-stat strong { display:block;font-family:'Space Grotesk',sans-serif;font-size:20px;color:var(--text-primary); }
+  .detail-stat span { font-size:11px;color:var(--text-muted); }
+  .detail-list { margin-top:16px;border-top:1px solid var(--border);padding-top:14px; }
+  .detail-list h4 { font-family:'Space Grotesk',sans-serif;font-size:13px;margin-bottom:8px; }
+  .detail-item { display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--slate-light);font-size:12px; }
+  @media (max-width: 1100px) { .sidebar { width:200px; } .content { padding:20px; } .stats-grid { grid-template-columns:repeat(2,1fr); } .report-grid { grid-template-columns:1fr 1fr; } }
+  @media (max-width: 720px) { body { overflow:auto;display:block; } .sidebar { width:100%;height:auto;max-height:none;display:block; } .sidebar-brand { padding:12px 16px; } .sidebar-section { padding:8px 10px 0;display:flex;gap:4px;overflow-x:auto; } .sidebar-section-label,.sidebar-footer { display:none; } .nav-item { flex:0 0 auto;padding:8px 10px;margin-bottom:8px; } .nav-item.active::before { display:none; } .main { min-height:calc(100vh - 66px); } .topbar { height:auto;min-height:60px;padding:12px 16px;flex-wrap:wrap; } .topbar-actions { width:100%;margin-left:0; } .search-box { flex:1; } .search-box input { width:100%; } .content { padding:16px;overflow:visible; } .stats-grid,.dash-grid,.agent-layout,.report-grid,.form-row { grid-template-columns:1fr; } .kanban { grid-template-columns:repeat(4, minmax(220px,1fr));overflow-x:auto;height:auto; } .data-toolbar .form-input { flex:1;min-width:130px; } table { min-width:680px; } .card-body { overflow-x:auto; } .task-row { grid-template-columns:28px 1fr 86px; } .task-row .badge { display:none; } .modal { width:calc(100vw - 32px);max-height:90vh;overflow-y:auto;padding:20px; } .connection-status { display:none; } }
+</style>
+</head>
+<body>
+
+<div class="auth-overlay" id="auth-overlay">
+  <form class="auth-panel" id="admin-login-form">
+    <div class="auth-brand"><div class="brand-icon">CA</div><div><div style="font-family:'Space Grotesk',sans-serif;font-weight:700;color:#0F172A;">CA Firm OS</div><div style="font-size:10px;color:#64748B;letter-spacing:.8px;">MULTI-TENANT PRACTICE PLATFORM</div></div></div>
+    <div class="auth-kicker">Admin access / व्यवस्थापक लॉगिन</div>
+    <div class="auth-title">Welcome back</div>
+    <div class="auth-copy">Sign in to manage your firm, customers, documents, billing, and automations.</div>
+    <div class="auth-error" id="auth-error">Unable to sign in. Check your credentials or configure the platform API.</div>
+    <div class="form-group"><label class="form-label" for="admin-email">Work email</label><input class="form-input" id="admin-email" type="email" autocomplete="username" value="namanmehta226@gmail.com" placeholder="admin@yourfirm.com" required></div>
+    <div class="form-group"><label class="form-label" for="admin-password">Password</label><input class="form-input" id="admin-password" type="password" autocomplete="current-password" placeholder="Your password" required></div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;" type="submit">Sign in securely</button>
+    <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;" type="button" onclick="enterDemoMode()">Preview demo workspace</button>
+    <div style="font-size:11px;color:#94A3B8;text-align:center;margin-top:16px;line-height:1.5;">Production login is verified by your server API. Passwords are never stored in this page.</div>
+  </form>
+</div>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-logo">
+      <div class="brand-icon">CA</div>
+      <div class="brand-text">
+        <div class="brand-name">Mehtas</div>
+        <div class="brand-sub">CHARTERED ACCOUNTANTS</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Overview</div>
+    <div class="nav-item active" onclick="switchView('dashboard', this)">
+      <span class="nav-icon">📊</span> Dashboard / डैशबोर्ड
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">AI Modules</div>
+    <div class="nav-item" onclick="switchView('agent', this)">
+      <span class="nav-icon">🤖</span> AI Support / सहायता
+      <span class="nav-badge">8</span>
+    </div>
+    <div class="nav-item" onclick="switchView('documents', this)">
+      <span class="nav-icon">📄</span> Documents / दस्तावेज़
+      <span class="nav-badge amber">5</span>
+    </div>
+    <div class="nav-item" onclick="switchView('compliance', this)">
+      <span class="nav-icon">🔔</span> Compliance / अनुपालन
+      <span class="nav-badge">3</span>
+    </div>
+    <div class="nav-item" onclick="switchView('leads', this)">
+      <span class="nav-icon">📊</span> Leads / संभावित ग्राहक
+      <span class="nav-badge teal">12</span>
+    </div>
+    <div class="nav-item" onclick="switchView('invoices', this)">
+      <span class="nav-icon">🧾</span> Invoices / फीस
+      <span class="nav-badge">4</span>
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Management</div>
+    <div class="nav-item" onclick="switchView('clients', this)">
+      <span class="nav-icon">👥</span> Clients / ग्राहक
+    </div>
+    <div class="nav-item" onclick="switchView('tasks', this)">
+      <span class="nav-icon">✅</span> Tasks / कार्य
+    </div>
+    <div class="nav-item" onclick="switchView('reports', this)">
+      <span class="nav-icon">📈</span> Reports / रिपोर्ट
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Settings</div>
+    <div class="nav-item" onclick="switchView('settings', this)">
+      <span class="nav-icon">⚙️</span> Settings / सेटिंग्स
+    </div>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="user-card">
+      <div class="user-avatar">RS</div>
+      <div class="user-info">
+        <div class="user-name">CA Rajesh Sharma</div>
+        <div class="user-role">Partner, Admin</div>
+      </div>
+      <span style="color:rgba(255,255,255,0.3);cursor:pointer;font-size:14px;">⋯</span>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div>
+      <span class="topbar-title" id="topbar-title">Dashboard</span>
+      <span class="topbar-subtitle" id="topbar-subtitle">— Aaj ka overview</span>
+    </div>
+    <div class="topbar-actions">
+      <span class="connection-status" id="connection-status">Demo data</span>
+      <span class="tenant-pill"><span class="tenant-dot"></span><span id="tenant-name">Mehtas</span></span>
+      <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode" aria-label="Toggle dark mode">☾</button>
+      <div class="search-box">
+        <span>🔍</span>
+        <input type="text" id="global-search" placeholder="Client, invoice, task search karein…">
+      </div>
+      <button class="btn btn-primary" onclick="openModal()">+ New Client</button>
+      <div class="notif-btn">🔔<div class="notif-dot"></div></div>
+      <div class="account-menu"><span class="text-xs text-muted" id="admin-email-label">Admin</span><button class="logout-btn" onclick="signOut()">Sign out</button></div>
+    </div>
+  </div>
+
+  <!-- CONTENT AREA -->
+  <div class="content">
+
+    <!-- ══ DASHBOARD VIEW ══ -->
+    <div class="view active" id="view-dashboard">
+      <div class="stats-grid">
+        <div class="stat-card teal">
+          <div class="stat-icon">👥</div>
+          <div class="stat-label">Total Clients</div>
+          <div class="stat-value" id="stat-clients">247</div>
+          <div class="stat-change up" id="stat-clients-change">↑ 12 this month</div>
+        </div>
+        <div class="stat-card amber">
+          <div class="stat-icon">⏰</div>
+          <div class="stat-label">Pending Deadlines</div>
+          <div class="stat-value" id="stat-deadlines">18</div>
+          <div class="stat-change down" id="stat-deadlines-change">3 urgent (7 days)</div>
+        </div>
+        <div class="stat-card emerald">
+          <div class="stat-icon">💰</div>
+          <div class="stat-label">Fees Collected</div>
+          <div class="stat-value" id="stat-collected">₹8.4L</div>
+          <div class="stat-change up" id="stat-collected-change">↑ 23% vs last month</div>
+        </div>
+        <div class="stat-card rose">
+          <div class="stat-icon">📬</div>
+          <div class="stat-label">Pending Fees</div>
+          <div class="stat-value" id="stat-pending-fees">₹2.1L</div>
+          <div class="stat-change down" id="stat-pending-fees-change">4 clients overdue</div>
+        </div>
+      </div>
+
+      <div class="dash-grid">
+        <div class="card">
+          <div class="card-header">
+            <span>🔥</span>
+            <span class="card-title">Upcoming Compliance Deadlines</span>
+            <span class="card-action" onclick="switchView('compliance', document.querySelector('[onclick*=compliance]'))">View All →</span>
+          </div>
+          <div class="card-body">
+            <div class="deadline-item">
+              <div class="deadline-dot" style="background:var(--rose)"></div>
+              <div class="deadline-info">
+                <div class="deadline-name">GSTR-3B Filing</div>
+                <div class="deadline-client">14 clients pending</div>
+              </div>
+              <div class="deadline-date urgent">20 Aug</div>
+            </div>
+            <div class="deadline-item">
+              <div class="deadline-dot" style="background:var(--rose)"></div>
+              <div class="deadline-info">
+                <div class="deadline-name">TDS Return Q1</div>
+                <div class="deadline-client">8 clients pending</div>
+              </div>
+              <div class="deadline-date urgent">31 Aug</div>
+            </div>
+            <div class="deadline-item">
+              <div class="deadline-dot" style="background:var(--amber)"></div>
+              <div class="deadline-info">
+                <div class="deadline-name">ITR Filing (Individuals)</div>
+                <div class="deadline-client">31 clients pending</div>
+              </div>
+              <div class="deadline-date soon">31 Aug</div>
+            </div>
+            <div class="deadline-item">
+              <div class="deadline-dot" style="background:var(--amber)"></div>
+              <div class="deadline-info">
+                <div class="deadline-name">GSTR-1 Monthly</div>
+                <div class="deadline-client">22 clients pending</div>
+              </div>
+              <div class="deadline-date soon">11 Sep</div>
+            </div>
+            <div class="deadline-item">
+              <div class="deadline-dot" style="background:var(--emerald)"></div>
+              <div class="deadline-info">
+                <div class="deadline-name">ROC Annual Return</div>
+                <div class="deadline-client">5 companies pending</div>
+              </div>
+              <div class="deadline-date ok">30 Sep</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <div class="card">
+            <div class="card-header">
+              <span>🤖</span>
+              <span class="card-title">AI Agent Activity</span>
+              <span class="ai-badge">Live</span>
+            </div>
+            <div class="card-body">
+              <div style="display:flex;flex-direction:column;gap:10px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                  <span class="text-sm">Queries Handled Today</span>
+                  <span class="font-semibold" style="color:var(--teal)">34</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                  <span class="text-sm">Reminders Sent</span>
+                  <span class="font-semibold" style="color:var(--amber)">87</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                  <span class="text-sm">Docs Auto-Verified</span>
+                  <span class="font-semibold" style="color:var(--emerald)">12</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                  <span class="text-sm">Leads Qualified</span>
+                  <span class="font-semibold" style="color:var(--violet)">7</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                  <span class="text-sm">Fees Collected (AI Follow-up)</span>
+                  <span class="font-semibold" style="color:var(--emerald)">₹45,000</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <span>📊</span>
+              <span class="card-title">Lead Pipeline</span>
+              <span class="card-action" onclick="switchView('leads', document.querySelector('[onclick*=leads]'))">View →</span>
+            </div>
+            <div class="card-body">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                <div style="text-align:center;padding:10px;background:var(--surface);border-radius:8px;">
+                  <div style="font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:var(--teal)">12</div>
+                  <div class="text-xs text-muted">Active Leads</div>
+                </div>
+                <div style="text-align:center;padding:10px;background:var(--surface);border-radius:8px;">
+                  <div style="font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:var(--emerald)">₹3.8L</div>
+                  <div class="text-xs text-muted">Pipeline Value</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent clients table -->
+      <div class="card mt-4" style="margin-top:16px;">
+        <div class="card-header">
+          <span>👥</span>
+          <span class="card-title">Recent Client Activity</span>
+          <span class="card-action">View All Clients →</span>
+        </div>
+        <div class="card-body" style="padding:0;">
+          <table>
+            <thead><tr>
+              <th>Client Name</th>
+              <th>Services</th>
+              <th>Last Activity</th>
+              <th>Pending Doc</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <td><div style="font-weight:600">Mehta Textiles Pvt Ltd</div><div class="text-xs text-muted">GST: 23AABCM1234F1Z5</div></td>
+                <td><span class="badge badge-teal">GST</span> <span class="badge badge-violet">TDS</span></td>
+                <td class="text-sm text-muted">2 hours ago</td>
+                <td><span class="badge badge-amber">Bank Stmt</span></td>
+                <td><span class="badge badge-emerald">✓ Active</span></td>
+                <td><button class="btn btn-outline" style="padding:4px 10px;font-size:12px;">View</button></td>
+              </tr>
+              <tr>
+                <td><div style="font-weight:600">Priya Sharma (Individual)</div><div class="text-xs text-muted">PAN: ABCPS1234D</div></td>
+                <td><span class="badge badge-teal">ITR</span></td>
+                <td class="text-sm text-muted">Yesterday</td>
+                <td><span class="badge badge-rose">Form 16</span></td>
+                <td><span class="badge badge-amber">⚠ Doc Pending</span></td>
+                <td><button class="btn btn-outline" style="padding:4px 10px;font-size:12px;">Remind</button></td>
+              </tr>
+              <tr>
+                <td><div style="font-weight:600">Gupta Hardware Store</div><div class="text-xs text-muted">GST: 23AACPG5678K1Z2</div></td>
+                <td><span class="badge badge-teal">GST</span> <span class="badge badge-slate">Bookkeeping</span></td>
+                <td class="text-sm text-muted">3 days ago</td>
+                <td>—</td>
+                <td><span class="badge badge-emerald">✓ Active</span></td>
+                <td><button class="btn btn-outline" style="padding:4px 10px;font-size:12px;">View</button></td>
+              </tr>
+              <tr>
+                <td><div style="font-weight:600">Kumar Constructions</div><div class="text-xs text-muted">GST: 23AACKC9012J1Z8</div></td>
+                <td><span class="badge badge-teal">GST</span> <span class="badge badge-violet">ROC</span> <span class="badge badge-slate">Audit</span></td>
+                <td class="text-sm text-muted">1 week ago</td>
+                <td><span class="badge badge-rose">P&L Statement</span></td>
+                <td><span class="badge badge-rose">🚨 Overdue</span></td>
+                <td><button class="btn btn-primary" style="padding:4px 10px;font-size:12px;">⚡ Chase</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ AI SUPPORT AGENT VIEW ══ -->
+    <div class="view" id="view-agent">
+      <div class="section-title">🤖 AI Client Support Agent</div>
+      <div class="section-desc">WhatsApp/Email se aane wale client queries ka AI automatically reply karta hai. CA ka time bachata hai.</div>
+
+      <div class="agent-layout">
+        <div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <span style="font-size:13px;font-weight:600;">Live Chat Preview</span>
+            <span class="ai-badge">🤖 AI Powered</span>
+            <select id="agent-client-select" onchange="selectAgentClient(this.value)" style="margin-left:auto;font-size:12px;border:1px solid var(--border);border-radius:6px;padding:4px 8px;"></select>
+          </div>
+          <div class="chat-container">
+            <div class="chat-header">
+              <span style="font-size:20px;">💬</span>
+              <div>
+                <div style="font-size:13.5px;font-weight:600;" id="agent-client-name">Select a client</div>
+                <div style="font-size:11px;color:var(--text-muted);" id="agent-client-meta">Client database • Support context</div>
+              </div>
+              <div class="ai-indicator" style="margin-left:auto;"></div>
+              <span style="font-size:11px;color:var(--emerald);font-weight:600;">AI Active</span>
+            </div>
+            <div class="chat-messages" id="chat-messages"><div class="text-muted text-sm">Select a client to load live support history.</div></div>
+            <div class="chat-input-area">
+              <textarea class="chat-input" rows="1" placeholder="Client ki taraf se message likhein (demo)…" id="chat-input"></textarea>
+              <button class="send-btn" onclick="sendTestMessage()" title="Send message">➤</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="agent-stats-col">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="mini-stat">
+              <div class="mini-stat-icon" style="background:var(--teal-light);">🤖</div>
+              <div class="mini-stat-info">
+                <div class="value" style="color:var(--teal)">94%</div>
+                <div class="label">Auto-resolve rate</div>
+              </div>
+            </div>
+            <div class="mini-stat">
+              <div class="mini-stat-icon" style="background:var(--emerald-light);">⚡</div>
+              <div class="mini-stat-info">
+                <div class="value" style="color:var(--emerald)">18s</div>
+                <div class="label">Avg response time</div>
+              </div>
+            </div>
+            <div class="mini-stat">
+              <div class="mini-stat-icon" style="background:var(--amber-light);">📬</div>
+              <div class="mini-stat-info">
+                <div class="value" style="color:var(--amber)">247</div>
+                <div class="label">Queries this month</div>
+              </div>
+            </div>
+            <div class="mini-stat">
+              <div class="mini-stat-icon" style="background:var(--violet-light);">👨‍💼</div>
+              <div class="mini-stat-info">
+                <div class="value" style="color:var(--violet)">16</div>
+                <div class="label">Escalated to CA</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <span>❓</span>
+              <span class="card-title">Top Frequently Asked Questions</span>
+            </div>
+            <div class="faq-list">
+              <div class="faq-item">
+                <span style="font-size:14px;">📅</span>
+                <span class="faq-q">GSTR-3B ki deadline kab hai?</span>
+                <span class="faq-count">48 asks</span>
+              </div>
+              <div class="faq-item">
+                <span style="font-size:14px;">📄</span>
+                <span class="faq-q">ITR file karne ke liye kaun se documents chahiye?</span>
+                <span class="faq-count">41 asks</span>
+              </div>
+              <div class="faq-item">
+                <span style="font-size:14px;">💰</span>
+                <span class="faq-q">GST registration ke liye fees kitni hai?</span>
+                <span class="faq-count">33 asks</span>
+              </div>
+              <div class="faq-item">
+                <span style="font-size:14px;">🏢</span>
+                <span class="faq-q">Pvt Ltd company kaise banate hain?</span>
+                <span class="faq-count">27 asks</span>
+              </div>
+              <div class="faq-item">
+                <span style="font-size:14px;">⚠️</span>
+                <span class="faq-q">Late filing penalty kya hogi?</span>
+                <span class="faq-count">22 asks</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ DOCUMENTS VIEW ══ -->
+    <div class="view" id="view-documents">
+      <div class="section-title">📄 Document Collection Hub</div>
+      <div class="section-desc">Client se required documents track karein. Missing documents ka automatic WhatsApp/Email reminder bhejein.</div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div class="doc-filters">
+          <div class="filter-tab active">All Clients</div>
+          <div class="filter-tab">Missing Docs</div>
+          <div class="filter-tab">Pending Verify</div>
+          <div class="filter-tab">Complete</div>
+          <div class="filter-tab">ITR Season</div>
+        </div>
+        <button class="btn btn-primary" style="font-size:12px;">📤 Send Bulk Reminder</button>
+      </div>
+
+      <!-- Client 1 -->
+      <div class="client-doc-card">
+        <div class="client-doc-header">
+          <div class="client-avatar" style="background:linear-gradient(135deg,#0EA5C9,#0369A1)">MT</div>
+          <div class="client-info">
+            <div class="name">Mehta Textiles Pvt Ltd</div>
+            <div class="meta">ITR Filing • Due: 31 Aug 2026 • 3 docs missing</div>
+          </div>
+          <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+            <button class="reminder-btn wa">📱 WhatsApp Remind</button>
+            <button class="reminder-btn email">📧 Email</button>
+          </div>
+        </div>
+        <div class="client-doc-body">
+          <div class="doc-grid">
+            <div class="doc-item received"><div class="doc-icon">📊</div><div class="doc-name">Balance Sheet</div><div class="doc-status-icon">✅</div></div>
+            <div class="doc-item received"><div class="doc-icon">💼</div><div class="doc-name">P&L Statement</div><div class="doc-status-icon">✅</div></div>
+            <div class="doc-item missing"><div class="doc-icon">🏦</div><div class="doc-name">Bank Statement</div><div class="doc-status-icon">❌</div></div>
+            <div class="doc-item missing"><div class="doc-icon">📋</div><div class="doc-name">GST Returns</div><div class="doc-status-icon">❌</div></div>
+            <div class="doc-item pending"><div class="doc-icon">🧾</div><div class="doc-name">Purchase Bills</div><div class="doc-status-icon">⏳</div></div>
+            <div class="doc-item received"><div class="doc-icon">📄</div><div class="doc-name">PAN Card</div><div class="doc-status-icon">✅</div></div>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" style="width:50%"></div></div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">3/6 documents received (50%)</div>
+        </div>
+      </div>
+
+      <!-- Client 2 -->
+      <div class="client-doc-card">
+        <div class="client-doc-header">
+          <div class="client-avatar" style="background:linear-gradient(135deg,#8B5CF6,#6D28D9)">PS</div>
+          <div class="client-info">
+            <div class="name">Priya Sharma</div>
+            <div class="meta">ITR (Individual) • Due: 31 Aug 2026 • 1 doc missing</div>
+          </div>
+          <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+            <button class="reminder-btn wa">📱 WhatsApp Remind</button>
+          </div>
+        </div>
+        <div class="client-doc-body">
+          <div class="doc-grid">
+            <div class="doc-item missing"><div class="doc-icon">📃</div><div class="doc-name">Form 16</div><div class="doc-status-icon">❌</div></div>
+            <div class="doc-item received"><div class="doc-icon">💳</div><div class="doc-name">PAN Card</div><div class="doc-status-icon">✅</div></div>
+            <div class="doc-item received"><div class="doc-icon">🏠</div><div class="doc-name">Aadhaar</div><div class="doc-status-icon">✅</div></div>
+            <div class="doc-item received"><div class="doc-icon">🏦</div><div class="doc-name">Bank Statement</div><div class="doc-status-icon">✅</div></div>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" style="width:75%"></div></div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">3/4 documents received (75%)</div>
+        </div>
+      </div>
+
+      <!-- Client 3 -->
+      <div class="client-doc-card">
+        <div class="client-doc-header">
+          <div class="client-avatar" style="background:linear-gradient(135deg,#10B981,#059669)">GH</div>
+          <div class="client-info">
+            <div class="name">Gupta Hardware Store</div>
+            <div class="meta">GST Filing • Due: 11 Sep 2026 • All docs received ✓</div>
+          </div>
+          <div style="margin-left:auto;"><span class="badge badge-emerald">✓ Complete</span></div>
+        </div>
+        <div class="client-doc-body">
+          <div class="doc-grid">
+            <div class="doc-item received"><div class="doc-icon">📊</div><div class="doc-name">Sales Register</div><div class="doc-status-icon">✅</div></div>
+            <div class="doc-item received"><div class="doc-icon">🧾</div><div class="doc-name">Purchase Bills</div><div class="doc-status-icon">✅</div></div>
+            <div class="doc-item received"><div class="doc-icon">🏦</div><div class="doc-name">Bank Statement</div><div class="doc-status-icon">✅</div></div>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>
+          <div style="font-size:11px;color:var(--emerald);margin-top:4px;">All documents received ✓</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ COMPLIANCE VIEW ══ -->
+    <div class="view" id="view-compliance">
+      <div class="section-title">🔔 Compliance Deadline Tracker</div>
+      <div class="section-desc">GST, ITR, TDS, ROC deadlines auto-track hoti hain. Clients ko automatic reminders milte hain 7, 3, 1 din pehle.</div>
+
+      <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
+        <div style="background:white;border:1px solid var(--border);border-radius:10px;padding:12px 20px;text-align:center;min-width:100px;">
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;color:var(--rose)">3</div>
+          <div style="font-size:11px;color:var(--text-muted)">🚨 Urgent (&lt;7 days)</div>
+        </div>
+        <div style="background:white;border:1px solid var(--border);border-radius:10px;padding:12px 20px;text-align:center;min-width:100px;">
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;color:var(--amber)">8</div>
+          <div style="font-size:11px;color:var(--text-muted)">⚠️ Upcoming (30 days)</div>
+        </div>
+        <div style="background:white;border:1px solid var(--border);border-radius:10px;padding:12px 20px;text-align:center;min-width:100px;">
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;color:var(--emerald)">12</div>
+          <div style="font-size:11px;color:var(--text-muted)">✅ Filed This Month</div>
+        </div>
+        <div style="background:white;border:1px solid var(--border);border-radius:10px;padding:12px 20px;text-align:center;min-width:100px;">
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;color:var(--teal)">156</div>
+          <div style="font-size:11px;color:var(--text-muted)">📬 Reminders Sent</div>
+        </div>
+        <button class="btn btn-primary" style="margin-left:auto;">📤 Send All Reminders</button>
+      </div>
+
+      <div class="month-header">August 2026 — Urgent</div>
+
+      <div class="compliance-item urgent">
+        <div class="comp-type-icon" style="background:var(--teal-light)">📋</div>
+        <div class="comp-info">
+          <div class="comp-title">GSTR-3B — Monthly Return</div>
+          <div class="comp-meta">14 clients pending • GST Department</div>
+          <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;">
+            <span class="badge badge-rose">Mehta Textiles</span>
+            <span class="badge badge-rose">Kumar Constructions</span>
+            <span class="badge badge-rose">+12 more</span>
+          </div>
+        </div>
+        <div class="comp-due">
+          <div class="comp-due-date" style="color:var(--rose)">20 Aug 2026</div>
+          <div class="comp-due-label" style="color:var(--rose)">2 days left!</div>
+        </div>
+        <div class="comp-actions">
+          <div class="icon-btn" title="Send WhatsApp Reminder">📱</div>
+          <div class="icon-btn" title="Send Email">📧</div>
+          <div class="icon-btn" title="Mark Done">✅</div>
+        </div>
+      </div>
+
+      <div class="compliance-item urgent">
+        <div class="comp-type-icon" style="background:var(--amber-light)">💼</div>
+        <div class="comp-info">
+          <div class="comp-title">TDS Return — Q1 (Apr-Jun 2026)</div>
+          <div class="comp-meta">8 clients pending • Income Tax Dept</div>
+          <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;">
+            <span class="badge badge-amber">Mehta Textiles</span>
+            <span class="badge badge-amber">+7 more</span>
+          </div>
+        </div>
+        <div class="comp-due">
+          <div class="comp-due-date" style="color:var(--rose)">31 Aug 2026</div>
+          <div class="comp-due-label" style="color:var(--rose)">13 days left</div>
+        </div>
+        <div class="comp-actions">
+          <div class="icon-btn">📱</div>
+          <div class="icon-btn">📧</div>
+          <div class="icon-btn">✅</div>
+        </div>
+      </div>
+
+      <div class="compliance-item urgent">
+        <div class="comp-type-icon" style="background:var(--violet-light)">📊</div>
+        <div class="comp-info">
+          <div class="comp-title">ITR Filing — Individuals & Proprietors</div>
+          <div class="comp-meta">31 clients pending • Income Tax Dept</div>
+          <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;">
+            <span class="badge badge-violet">Priya Sharma</span>
+            <span class="badge badge-violet">Anil Verma</span>
+            <span class="badge badge-violet">+29 more</span>
+          </div>
+        </div>
+        <div class="comp-due">
+          <div class="comp-due-date" style="color:var(--rose)">31 Aug 2026</div>
+          <div class="comp-due-label" style="color:var(--rose)">13 days left</div>
+        </div>
+        <div class="comp-actions">
+          <div class="icon-btn">📱</div>
+          <div class="icon-btn">📧</div>
+          <div class="icon-btn">✅</div>
+        </div>
+      </div>
+
+      <div class="month-header" style="margin-top:24px;">September 2026</div>
+
+      <div class="compliance-item warning">
+        <div class="comp-type-icon" style="background:var(--teal-light)">📋</div>
+        <div class="comp-info">
+          <div class="comp-title">GSTR-1 — Monthly Outward Supplies</div>
+          <div class="comp-meta">22 clients • GST Department</div>
+        </div>
+        <div class="comp-due">
+          <div class="comp-due-date" style="color:var(--amber)">11 Sep 2026</div>
+          <div class="comp-due-label">24 days left</div>
+        </div>
+        <div class="comp-actions">
+          <div class="icon-btn">📱</div>
+          <div class="icon-btn">📧</div>
+          <div class="icon-btn">✅</div>
+        </div>
+      </div>
+
+      <div class="compliance-item ok">
+        <div class="comp-type-icon" style="background:var(--emerald-light)">🏢</div>
+        <div class="comp-info">
+          <div class="comp-title">ROC Annual Return (MGT-7)</div>
+          <div class="comp-meta">5 companies • Ministry of Corporate Affairs</div>
+          <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;">
+            <span class="badge badge-slate">Kumar Constructions</span>
+            <span class="badge badge-slate">+4 more</span>
+          </div>
+        </div>
+        <div class="comp-due">
+          <div class="comp-due-date" style="color:var(--emerald)">30 Sep 2026</div>
+          <div class="comp-due-label">43 days left</div>
+        </div>
+        <div class="comp-actions">
+          <div class="icon-btn">📱</div>
+          <div class="icon-btn">📧</div>
+          <div class="icon-btn">✅</div>
+        </div>
+      </div>
+
+      <div class="compliance-item done">
+        <div class="comp-type-icon" style="background:var(--slate-light)">✅</div>
+        <div class="comp-info">
+          <div class="comp-title">GSTR-3B — July 2026</div>
+          <div class="comp-meta">All 22 clients filed • Completed on 19 Jul 2026</div>
+        </div>
+        <div class="comp-due">
+          <div class="comp-due-date" style="color:var(--text-muted)">20 Jul 2026</div>
+          <div class="comp-due-label" style="color:var(--emerald)">Completed ✓</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ LEADS VIEW ══ -->
+    <div class="view" id="view-leads">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+        <div>
+          <div class="section-title">📊 Lead Qualification Pipeline</div>
+          <div class="section-desc" style="margin-bottom:0">Website/WhatsApp enquiries → AI qualify → Auto follow-up</div>
+        </div>
+        <button class="btn btn-primary" onclick="openLeadModal()">+ Add Lead</button>
+      </div>
+
+      <div class="kanban">
+        <!-- New Enquiry -->
+        <div class="kanban-col">
+          <div class="kanban-col-header">
+            <div class="kanban-count" style="background:#E2E8F0;color:var(--slate)">4</div>
+            <span class="kanban-col-title">🆕 New Enquiry</span>
+          </div>
+          <div class="lead-card">
+            <div class="lead-name">Sunita Agarwal</div>
+            <div class="lead-service">GST Registration + ITR</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">📱 WhatsApp • 2 hours ago</div>
+            <div class="score-bar"><div class="score-fill" style="width:30%;background:var(--amber)"></div></div>
+            <div class="lead-footer">
+              <span class="lead-source">WhatsApp</span>
+              <span class="lead-value">₹15,000</span>
+            </div>
+          </div>
+          <div class="lead-card">
+            <div class="lead-name">Ratan Steel Works</div>
+            <div class="lead-service">Company Incorporation</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">🌐 Website • 5 hours ago</div>
+            <div class="score-bar"><div class="score-fill" style="width:20%;background:var(--rose)"></div></div>
+            <div class="lead-footer">
+              <span class="lead-source">Website</span>
+              <span class="lead-value">₹25,000</span>
+            </div>
+          </div>
+          <div class="lead-card">
+            <div class="lead-name">Dr. Pooja Mishra</div>
+            <div class="lead-service">Professional ITR Filing</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">📱 WhatsApp • Yesterday</div>
+            <div class="score-bar"><div class="score-fill" style="width:45%;background:var(--amber)"></div></div>
+            <div class="lead-footer">
+              <span class="lead-source">Referral</span>
+              <span class="lead-value">₹8,000</span>
+            </div>
+          </div>
+          <div class="lead-card">
+            <div class="lead-name">Verma Transport Co.</div>
+            <div class="lead-service">GST + TDS</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">📱 WhatsApp • Yesterday</div>
+            <div class="score-bar"><div class="score-fill" style="width:25%;background:var(--amber)"></div></div>
+            <div class="lead-footer">
+              <span class="lead-source">WhatsApp</span>
+              <span class="lead-value">₹20,000</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI Qualifying -->
+        <div class="kanban-col">
+          <div class="kanban-col-header">
+            <div class="kanban-count" style="background:var(--teal-light);color:#0C4A6E">3</div>
+            <span class="kanban-col-title">🤖 AI Qualifying</span>
+          </div>
+          <div class="lead-card">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+              <div class="lead-name" style="margin-bottom:0">Kapoor Pharma</div>
+              <span class="ai-badge" style="font-size:9px;">AI Active</span>
+            </div>
+            <div class="lead-service">Audit + ROC + GST</div>
+            <div style="font-size:11px;color:var(--teal);margin-top:4px;font-weight:500;">🤖 AI asking 3/5 questions…</div>
+            <div class="score-bar"><div class="score-fill" style="width:65%;background:var(--teal)"></div></div>
+            <div class="lead-footer">
+              <span class="lead-source">Website</span>
+              <span class="lead-value">₹60,000</span>
+            </div>
+          </div>
+          <div class="lead-card">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+              <div class="lead-name" style="margin-bottom:0">Shreya Fashion</div>
+              <span class="ai-badge" style="font-size:9px;">AI Active</span>
+            </div>
+            <div class="lead-service">GST Registration</div>
+            <div style="font-size:11px;color:var(--teal);margin-top:4px;font-weight:500;">🤖 Qualification 80% done</div>
+            <div class="score-bar"><div class="score-fill" style="width:80%;background:var(--emerald)"></div></div>
+            <div class="lead-footer">
+              <span class="lead-source">Referral</span>
+              <span class="lead-value">₹12,000</span>
+            </div>
+          </div>
+          <div class="lead-card">
+            <div class="lead-name">Anand Electronics</div>
+            <div class="lead-service">Bookkeeping + ITR</div>
+            <div style="font-size:11px;color:var(--amber);margin-top:4px;font-weight:500;">⚠️ Low budget concern</div>
+            <div class="score-bar"><div class="score-fill" style="width:40%;background:var(--amber)"></div></div>
+            <div class="lead-footer">
+              <span class="lead-source">WhatsApp</span>
+              <span class="lead-value">₹10,000</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Proposal Sent -->
+        <div class="kanban-col">
+          <div class="kanban-col-header">
+            <div class="kanban-count" style="background:var(--violet-light);color:#4C1D95">3</div>
+            <span class="kanban-col-title">📤 Proposal Sent</span>
+          </div>
+          <div class="lead-card">
+            <div class="lead-name">Bharat Logistics</div>
+            <div class="lead-service">Full Compliance + Audit</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Proposal sent 3 days ago</div>
+            <div style="font-size:11px;color:var(--amber);margin-top:2px;font-weight:500;">⏰ Follow-up due today</div>
+            <div class="score-bar"><div class="score-fill" style="width:75%;background:var(--violet)"></div></div>
+            <div class="lead-footer">
+              <span class="lead-source">Referral</span>
+              <span class="lead-value">₹85,000</span>
+            </div>
+          </div>
+          <div class="lead-card">
+            <div class="lead-name">S.K. Builders</div>
+            <div class="lead-service">GST + ROC + TDS</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Proposal sent 1 week ago</div>
+            <div style="font-size:11px;color:var(--rose);margin-top:2px;font-weight:500;">🚨 No response — escalate</div>
+            <div class="score-bar"><div class="score-fill" style="width:55%;background:var(--amber)"></div></div>
+            <div class="lead-footer">
+              <span class="lead-source">Website</span>
+              <span class="lead-value">₹45,000</span>
+            </div>
+          </div>
+          <div class="lead-card">
+            <div class="lead-name">Rani Jewellers</div>
+            <div class="lead-service">ITR + GST + Bookkeeping</div>
+            <div style="font-size:11px;color:var(--emerald);margin-top:4px;font-weight:500;">✅ Client replied positively</div>
+            <div class="score-bar"><div class="score-fill" style="width:90%;background:var(--emerald)"></div></div>
+            <div class="lead-footer">
+              <span class="lead-source">Referral</span>
+              <span class="lead-value">₹35,000</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Won / Onboarded -->
+        <div class="kanban-col">
+          <div class="kanban-col-header">
+            <div class="kanban-count" style="background:var(--emerald-light);color:#065F46">2</div>
+            <span class="kanban-col-title">🎉 Won — Onboarding</span>
+          </div>
+          <div class="lead-card" style="border-color:var(--emerald);">
+            <div class="lead-name">Patel Agro Foods</div>
+            <div class="lead-service">Annual Compliance Package</div>
+            <div style="font-size:11px;color:var(--emerald);margin-top:4px;font-weight:600;">🎉 Converted! Agreement signed</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">Onboarding in progress</div>
+            <div class="lead-footer">
+              <span class="lead-source">WhatsApp</span>
+              <span class="lead-value">₹72,000/yr</span>
+            </div>
+          </div>
+          <div class="lead-card" style="border-color:var(--emerald);">
+            <div class="lead-name">Joshi Medical Store</div>
+            <div class="lead-service">GST + ITR</div>
+            <div style="font-size:11px;color:var(--emerald);margin-top:4px;font-weight:600;">🎉 Converted! Payment received</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">Docs collection started</div>
+            <div class="lead-footer">
+              <span class="lead-source">Referral</span>
+              <span class="lead-value">₹18,000</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ INVOICES VIEW ══ -->
+    <div class="view" id="view-invoices">
+      <div class="section-title">🧾 Invoice & Fee Management</div>
+      <div class="section-desc">Pending fees identify karein, automatic WhatsApp/Email reminders bhejein, payment status track karein.</div>
+
+      <div class="invoice-summary">
+        <div class="inv-stat">
+          <div class="amount" style="color:var(--text-primary)">₹10,54,500</div>
+          <div class="inv-label">Total Billed (Aug 2026)</div>
+        </div>
+        <div class="inv-stat">
+          <div class="amount" style="color:var(--emerald)">₹8,41,500</div>
+          <div class="inv-label">✅ Collected</div>
+        </div>
+        <div class="inv-stat">
+          <div class="amount" style="color:var(--rose)">₹2,13,000</div>
+          <div class="inv-label">⏰ Outstanding</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span>💸</span>
+          <span class="card-title">Outstanding Invoices</span>
+          <button class="btn btn-primary" style="margin-left:auto;font-size:12px;">📤 Send All Reminders</button>
+        </div>
+        <div style="padding:0;">
+          <table>
+            <thead><tr>
+              <th>Client</th>
+              <th>Invoice #</th>
+              <th>Service</th>
+              <th>Amount</th>
+              <th>Due Date</th>
+              <th>Overdue</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <td>
+                  <div style="font-weight:600">Kumar Constructions</div>
+                  <div class="text-xs text-muted">📱 9876543210</div>
+                </td>
+                <td class="text-sm text-muted">INV-2026-089</td>
+                <td><span class="badge badge-teal">GST Filing</span> <span class="badge badge-violet">ROC</span></td>
+                <td style="font-weight:700;color:var(--rose)">₹75,000</td>
+                <td class="text-sm">01 Aug 2026</td>
+                <td><span style="font-weight:700;color:var(--rose)">17 days</span></td>
+                <td><span class="badge badge-rose">🚨 Overdue</span></td>
+                <td>
+                  <div class="action-row">
+                    <button class="reminder-btn wa">📱 WA</button>
+                    <button class="reminder-btn email">📧</button>
+                    <button class="reminder-btn call">📞</button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <div style="font-weight:600">Mehta Textiles</div>
+                  <div class="text-xs text-muted">📱 9012345678</div>
+                </td>
+                <td class="text-sm text-muted">INV-2026-091</td>
+                <td><span class="badge badge-teal">GSTR-3B</span> <span class="badge badge-amber">TDS</span></td>
+                <td style="font-weight:700;color:var(--amber)">₹48,000</td>
+                <td class="text-sm">10 Aug 2026</td>
+                <td><span style="font-weight:700;color:var(--amber)">8 days</span></td>
+                <td><span class="badge badge-amber">⚠️ Due Soon</span></td>
+                <td>
+                  <div class="action-row">
+                    <button class="reminder-btn wa">📱 WA</button>
+                    <button class="reminder-btn email">📧</button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <div style="font-weight:600">Priya Sharma</div>
+                  <div class="text-xs text-muted">📱 9345678901</div>
+                </td>
+                <td class="text-sm text-muted">INV-2026-094</td>
+                <td><span class="badge badge-violet">ITR Filing</span></td>
+                <td style="font-weight:700;color:var(--amber)">₹12,000</td>
+                <td class="text-sm">20 Aug 2026</td>
+                <td><span style="font-weight:600;color:var(--text-muted)">—</span></td>
+                <td><span class="badge badge-teal">📨 Reminder Sent</span></td>
+                <td>
+                  <div class="action-row">
+                    <button class="reminder-btn wa">📱 WA</button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <div style="font-weight:600">Verma Transport Co.</div>
+                  <div class="text-xs text-muted">📱 9456789012</div>
+                </td>
+                <td class="text-sm text-muted">INV-2026-082</td>
+                <td><span class="badge badge-teal">GST</span> <span class="badge badge-amber">TDS Q4</span></td>
+                <td style="font-weight:700;color:var(--rose)">₹78,000</td>
+                <td class="text-sm">15 Jul 2026</td>
+                <td><span style="font-weight:700;color:var(--rose)">34 days</span></td>
+                <td><span class="badge badge-rose">🚨 Legal Notice</span></td>
+                <td>
+                  <div class="action-row">
+                    <button class="reminder-btn call">📞 Call</button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;background:white;border:1px solid var(--border);border-radius:12px;padding:18px;">
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;margin-bottom:12px;">🤖 AI Auto-Reminder Schedule</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+          <div style="border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;">
+            <div style="font-size:20px;margin-bottom:6px;">7⃣</div>
+            <div style="font-size:12.5px;font-weight:600;">7 Days Before</div>
+            <div style="font-size:11.5px;color:var(--text-muted);margin-top:3px;">Polite WhatsApp reminder</div>
+          </div>
+          <div style="border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;">
+            <div style="font-size:20px;margin-bottom:6px;">3⃣</div>
+            <div style="font-size:12.5px;font-weight:600;">3 Days Before</div>
+            <div style="font-size:11.5px;color:var(--text-muted);margin-top:3px;">WA + Email follow-up</div>
+          </div>
+          <div style="border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;background:var(--rose-light);">
+            <div style="font-size:20px;margin-bottom:6px;">🚨</div>
+            <div style="font-size:12.5px;font-weight:600;">Overdue</div>
+            <div style="font-size:11.5px;color:var(--rose);margin-top:3px;">Escalate to CA partner</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ MANAGEMENT VIEWS ══ -->
+    <div class="view" id="view-clients">
+      <div class="section-title">👥 Client Management / ग्राहक प्रबंधन</div>
+      <div class="section-desc">Client relationships, services, documents, and communication history in one place.</div>
+      <div class="data-toolbar"><input class="form-input" placeholder="Search clients / ग्राहक खोजें…"><select class="form-input"><option>All services</option><option>GST</option><option>ITR</option><option>Audit</option></select><button class="btn btn-primary" onclick="openModal()">+ Add Client</button></div>
+      <div class="card"><div class="card-body" style="padding:0;overflow-x:auto;"><table><thead><tr><th>Client</th><th>Services</th><th>Owner</th><th>Last activity</th><th>Status</th><th></th></tr></thead><tbody>
+        <tr><td><strong>Mehta Textiles Pvt Ltd</strong><div class="text-xs text-muted">GST: 23AABCM1234F1Z5</div></td><td><span class="badge badge-teal">GST</span> <span class="badge badge-violet">TDS</span></td><td>R. Sharma</td><td class="text-muted">2 hours ago</td><td><span class="badge badge-emerald">Active</span></td><td><button class="icon-btn" title="View client">→</button></td></tr>
+        <tr><td><strong>Priya Sharma</strong><div class="text-xs text-muted">PAN: ABCPS1234D</div></td><td><span class="badge badge-teal">ITR</span></td><td>A. Verma</td><td class="text-muted">Yesterday</td><td><span class="badge badge-amber">Doc pending</span></td><td><button class="icon-btn" title="View client">→</button></td></tr>
+        <tr><td><strong>Kumar Constructions</strong><div class="text-xs text-muted">GST: 23AACKC9012J1Z8</div></td><td><span class="badge badge-teal">GST</span> <span class="badge badge-violet">ROC</span></td><td>R. Sharma</td><td class="text-muted">1 week ago</td><td><span class="badge badge-rose">Overdue</span></td><td><button class="icon-btn" title="View client">→</button></td></tr>
+      </tbody></table></div></div>
+      <div class="stats-grid" style="margin-top:16px;grid-template-columns:repeat(3,1fr);"><div class="mini-stat"><div class="mini-stat-icon" style="background:var(--teal-light);">👥</div><div class="mini-stat-info"><div class="value">247</div><div class="label">Active clients</div></div></div><div class="mini-stat"><div class="mini-stat-icon" style="background:var(--amber-light);">📥</div><div class="mini-stat-info"><div class="value">18</div><div class="label">Documents pending</div></div></div><div class="mini-stat"><div class="mini-stat-icon" style="background:var(--emerald-light);">⭐</div><div class="mini-stat-info"><div class="value">92%</div><div class="label">Retention rate</div></div></div></div>
+      </div>
+    </div>
+    <div class="view" id="view-tasks">
+      <div class="section-title">✅ Task Management / कार्य प्रबंधन</div>
+      <div class="section-desc">Assign work, track filing progress, and keep every deadline visible.</div>
+      <div class="data-toolbar"><button class="filter-tab active">All 38</button><button class="filter-tab">My tasks 12</button><button class="filter-tab">Overdue 3</button><button class="btn btn-primary" style="margin-left:auto;">+ New task</button></div>
+      <div class="card"><div class="card-body"><div class="task-row"><input class="task-check" type="checkbox"><div><div class="task-title">Collect bank statement</div><div class="task-meta">Mehta Textiles · GST filing · Due today</div></div><span class="badge badge-rose">Urgent</span><span class="badge badge-teal">R. Sharma</span></div><div class="task-row"><input class="task-check" type="checkbox"><div><div class="task-title">Review Form 16 documents</div><div class="task-meta">Priya Sharma · ITR filing · Due tomorrow</div></div><span class="badge badge-amber">High</span><span class="badge badge-violet">A. Verma</span></div><div class="task-row"><input class="task-check" type="checkbox"><div><div class="task-title">Prepare ROC annual return</div><div class="task-meta">Kumar Constructions · ROC · 30 Sep 2026</div></div><span class="badge badge-slate">Normal</span><span class="badge badge-teal">R. Sharma</span></div><div class="task-row"><input class="task-check" type="checkbox"><div><div class="task-title">Send invoice follow-up</div><div class="task-meta">Gupta Hardware · Fees · Due in 3 days</div></div><span class="badge badge-amber">Medium</span><span class="badge badge-violet">A. Verma</span></div></div></div>
+      </div>
+    </div>
+    <div class="view" id="view-reports">
+      <div class="section-title">📈 Reports & Analytics / रिपोर्ट और विश्लेषण</div>
+      <div class="section-desc">Practice performance, revenue trends, and compliance health at a glance.</div>
+      <div class="report-grid"><div class="card chart-card"><div class="card-header"><span class="card-title">Fee collections</span><span class="card-action">Last 6 months</span></div><div class="card-body"><div class="bar-chart"><div class="bar-wrap"><div class="bar" style="height:48%"></div><div class="bar-label">Apr</div></div><div class="bar-wrap"><div class="bar" style="height:62%"></div><div class="bar-label">May</div></div><div class="bar-wrap"><div class="bar" style="height:54%"></div><div class="bar-label">Jun</div></div><div class="bar-wrap"><div class="bar" style="height:76%"></div><div class="bar-label">Jul</div></div><div class="bar-wrap"><div class="bar" style="height:68%"></div><div class="bar-label">Aug</div></div><div class="bar-wrap"><div class="bar" style="height:92%"></div><div class="bar-label">Sep</div></div></div><div class="text-xs text-muted" style="margin-top:12px;">₹8.4L collected this month <span style="color:var(--emerald);font-weight:600;float:right;">↑ 23%</span></div></div></div><div class="card"><div class="card-header"><span class="card-title">Compliance health</span></div><div class="card-body"><div class="progress-row"><span>GST</span><div class="progress-track"><span style="width:88%"></span></div><strong>88%</strong></div><div class="progress-row"><span>ITR</span><div class="progress-track"><span style="width:74%"></span></div><strong>74%</strong></div><div class="progress-row"><span>TDS</span><div class="progress-track"><span style="width:91%"></span></div><strong>91%</strong></div><div class="progress-row"><span>ROC</span><div class="progress-track"><span style="width:66%"></span></div><strong>66%</strong></div></div></div><div class="card"><div class="card-header"><span class="card-title">Automation impact</span></div><div class="card-body"><div class="mini-stat" style="padding:10px 0;border:0;"><div class="mini-stat-icon" style="background:var(--violet-light);">⚡</div><div class="mini-stat-info"><div class="value">42h</div><div class="label">Saved this month</div></div></div><div class="mini-stat" style="padding:10px 0;border:0;"><div class="mini-stat-icon" style="background:var(--emerald-light);">💬</div><div class="mini-stat-info"><div class="value">94%</div><div class="label">Queries auto-resolved</div></div></div></div></div></div>
+      <div class="card"><div class="card-header"><span class="card-title">Monthly practice summary</span><button class="btn btn-outline" style="padding:5px 10px;margin-left:auto;">Export CSV</button></div><div class="card-body" style="padding:0;overflow-x:auto;"><table><thead><tr><th>Metric</th><th>This month</th><th>Last month</th><th>Change</th></tr></thead><tbody><tr><td>Active clients</td><td>247</td><td>235</td><td class="stat-change up">↑ 5.1%</td></tr><tr><td>Fees collected</td><td>₹8.4L</td><td>₹6.8L</td><td class="stat-change up">↑ 23%</td></tr><tr><td>Compliance filings completed</td><td>186</td><td>172</td><td class="stat-change up">↑ 8.1%</td></tr><tr><td>Open support queries</td><td>8</td><td>14</td><td class="stat-change up">↓ 42%</td></tr></tbody></table></div></div>
+      </div>
+    </div>
+    <div class="view" id="view-settings">
+      <div class="section-title">⚙️ Settings</div>
+      <div class="section-desc">WhatsApp integration, email templates, reminder schedules configure karein.</div>
+      <div class="settings-grid">
+        <div class="settings-panel">
+          <h3>n8n connection</h3>
+          <p>Paste the production URL of the Dashboard API webhook. The page keeps demo data until a URL is saved.</p>
+          <label class="form-label" for="n8n-api-url">Dashboard API URL</label>
+          <input class="form-input" id="n8n-api-url" type="url" placeholder="https://n8n.example.com/webhook/ca-dashboard">
+          <label class="form-label" for="platform-api-url" style="margin-top:12px;">Platform API URL</label>
+          <input class="form-input" id="platform-api-url" type="url" placeholder="https://api.yourfirm.com">
+          <div class="modal-footer" style="margin-top:14px;justify-content:flex-start;">
+            <button class="btn btn-primary" onclick="saveApiUrl();savePlatformApiUrl()">Save & Refresh</button>
+            <button class="btn btn-outline" onclick="clearApiUrl()">Use Demo Data</button>
+          </div>
+        </div>
+        <div class="settings-panel">
+          <h3>Automation coverage</h3>
+          <p>Connected workflows should return clients, compliance, invoices, leads, documents, and activity totals from Google Sheets.</p>
+          <div class="badge badge-emerald" id="settings-health">● Dashboard ready</div>
+          <div class="text-xs text-muted" style="margin-top:12px;line-height:1.7;">WhatsApp intake · AI support · document reminders · compliance deadlines · lead qualification · invoice follow-up</div>
+        </div>
+        <div class="settings-panel">
+          <h3>Customer file storage</h3>
+          <p>Each customer gets an isolated storage path: <strong>tenant_id/customer_id/fiscal_year/</strong>. File bytes belong in S3, Supabase Storage, or Google Cloud Storage.</p>
+          <div class="data-toolbar" style="margin:0;"><span class="badge badge-teal">Private per customer</span><span class="badge badge-emerald">Audit logged</span></div>
+          <div class="text-xs text-muted" style="margin-top:12px;">Configure signed-upload and signed-download endpoints in the Platform API. Never expose storage credentials in this HTML.</div>
+        </div>
+        <div class="settings-panel">
+          <h3>Plan & billing</h3>
+          <p>Monetization hooks are ready for Stripe or Razorpay subscriptions and usage-based limits.</p>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin:12px 0;"><span class="text-sm font-semibold">Professional plan</span><span class="badge badge-emerald">Active trial</span></div>
+          <div class="progress-track"><span style="width:42%"></span></div>
+          <div class="text-xs text-muted" style="margin-top:7px;">42 / 100 active customers this period</div>
+          <button class="btn btn-outline" style="margin-top:14px;" onclick="alert('Billing portal will open through your Platform API.')">Open billing portal</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- NEW CLIENT MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-title">+ Naya Client Add Karein</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Client / Firm Name *</label>
+        <input class="form-input" id="client-name" type="text" placeholder="Mehta Textiles Pvt Ltd">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Client Type *</label>
+        <select class="form-input">
+          <option>Individual</option>
+          <option>Proprietorship</option>
+          <option>Partnership</option>
+          <option>Private Limited</option>
+          <option>Public Limited</option>
+          <option>LLP</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">PAN Number</label>
+        <input class="form-input" id="client-pan" type="text" placeholder="AABCM1234F">
+      </div>
+      <div class="form-group">
+        <label class="form-label">GSTIN</label>
+        <input class="form-input" id="client-gstin" type="text" placeholder="23AABCM1234F1Z5">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">WhatsApp Number *</label>
+        <input class="form-input" id="client-phone" type="text" placeholder="+91 98765 43210">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input class="form-input" id="client-email" type="email" placeholder="client@example.com">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Services Required</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">
+        <label style="display:flex;align-items:center;gap:5px;font-size:12.5px;cursor:pointer;"><input type="checkbox" checked> GST Filing</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12.5px;cursor:pointer;"><input type="checkbox"> ITR</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12.5px;cursor:pointer;"><input type="checkbox"> TDS</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12.5px;cursor:pointer;"><input type="checkbox"> ROC / MCA</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12.5px;cursor:pointer;"><input type="checkbox"> Audit</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12.5px;cursor:pointer;"><input type="checkbox"> Bookkeeping</label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="submitNewClient()">✓ Client Add Karein</button>
+    </div>
+  </div>
+</div>
+
+<!-- NEW LEAD MODAL -->
+<div class="modal-overlay" id="lead-modal">
+  <div class="modal">
+    <div class="modal-title">+ Add New Lead</div>
+    <div class="form-group"><label class="form-label">Lead / Person Name *</label><input class="form-input" id="lead-name" type="text" placeholder="Sunita Agarwal"></div>
+    <div class="form-row"><div class="form-group"><label class="form-label">Phone</label><input class="form-input" id="lead-phone" type="text" placeholder="9876543210"></div><div class="form-group"><label class="form-label">Email</label><input class="form-input" id="lead-email" type="email" placeholder="lead@example.com"></div></div>
+    <div class="form-group"><label class="form-label">Requirement</label><input class="form-input" id="lead-requirement" type="text" placeholder="GST Registration / ITR Filing"></div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeLeadModal()">Cancel</button><button class="btn btn-primary" onclick="submitNewLead()">Save Lead</button></div>
+  </div>
+</div>
+
+<!-- CLIENT DOCUMENT MODAL -->
+<div class="modal-overlay" id="document-modal">
+  <div class="modal">
+    <div class="modal-title">📄 Add Client Document</div>
+    <div class="form-group"><label class="form-label" for="document-client">Client *</label><select class="form-input" id="document-client"></select></div>
+    <div class="form-row"><div class="form-group"><label class="form-label" for="document-type">Document type</label><input class="form-input" id="document-type" type="text" placeholder="GST Return, PAN, Bank Statement"></div><div class="form-group"><label class="form-label" for="document-year">Financial year</label><input class="form-input" id="document-year" type="text" value="2026-27"></div></div>
+    <div class="form-group"><label class="form-label">File *</label><label class="upload-zone" for="document-file"><div style="font-size:24px;">↥</div><div id="document-file-label">Choose PDF, image, or spreadsheet</div><input id="document-file" type="file" hidden accept=".pdf,.jpg,.jpeg,.png,.xlsx,.xls,.csv,.doc,.docx"></label></div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeDocumentModal()">Cancel</button><button class="btn btn-primary" onclick="uploadClientDocument()">Upload document</button></div>
+  </div>
+</div>
+
+<!-- CLIENT DETAIL MODAL -->
+<div class="modal-overlay" id="client-detail-modal">
+  <div class="modal" style="width:min(680px,calc(100vw - 32px));max-height:90vh;overflow-y:auto;">
+    <div style="display:flex;align-items:start;gap:12px;"><div class="client-avatar" id="detail-avatar" style="background:var(--teal);">CL</div><div><div class="modal-title" id="detail-name" style="margin-bottom:3px;">Client</div><div class="text-xs text-muted" id="detail-contact">—</div></div><button class="icon-btn" style="margin-left:auto;" onclick="closeClientDetail()" title="Close">×</button></div>
+    <div class="client-detail-grid"><div class="detail-stat"><strong id="detail-documents">0</strong><span>Documents</span></div><div class="detail-stat"><strong id="detail-compliance">0</strong><span>Compliance items</span></div><div class="detail-stat"><strong id="detail-invoices">0</strong><span>Invoices</span></div><div class="detail-stat"><strong id="detail-tasks">0</strong><span>Open tasks</span></div></div>
+    <div class="detail-list"><h4>Documents / दस्तावेज़</h4><div id="detail-document-list"></div></div>
+    <div class="detail-list"><h4>Compliance / अनुपालन</h4><div id="detail-compliance-list"></div></div>
+    <div class="detail-list"><h4>Invoices / फीस</h4><div id="detail-invoice-list"></div></div>
+  </div>
+</div>
+
+<script>
+  const API_URL_STORAGE_KEY = 'ca-firm-n8n-dashboard-url';
+  const PLATFORM_API_STORAGE_KEY = 'ca-firm-platform-api-url';
+  const AUTH_TOKEN_KEY = 'ca-firm-admin-session';
+  const emptyDashboardData = {
+    clients: { total: 0, rows: [], change: 'No live data' },
+    deadlines: { pending: 0, urgent: 0, rows: [] },
+    documents: { pending: 0, rows: [] },
+    leads: { active: 0, rows: [] },
+    invoices: { collected: '₹0', pending: '₹0', overdueClients: 0, rows: [], change: 'No live data' },
+    tasks: [],
+    reports: { complianceRate: 0, automationHours: 0 }
+  };
+  const apiUrl = () => localStorage.getItem(API_URL_STORAGE_KEY) || '';
+  const demoClients = () => {
+    const dashboardClients = JSON.parse(localStorage.getItem('ca-demo-clients') || '[]');
+    const portalClients = JSON.parse(localStorage.getItem('ca-client-portal-submissions') || '[]').map(row => ({ client_id: row.id, name: row.name, client_name: row.name, phone: row.phone, email: row.email, pan: row.pan, gstin: row.gstin, services: row.service, status: 'Active', created_at: row.received_at }));
+    return [...dashboardClients, ...portalClients];
+  };
+  const demoLeads = () => JSON.parse(localStorage.getItem('ca-demo-leads') || '[]');
+  const demoDocuments = () => {
+    const dashboardDocs = JSON.parse(localStorage.getItem('ca-demo-documents') || '[]');
+    const portalDocs = JSON.parse(localStorage.getItem('ca-client-portal-submissions') || '[]').map(row => ({ doc_id: row.id, client_id: row.phone, client_name: row.name, document_name: row.file_name, compliance_type: row.service, requested_date: row.received_at, status: 'Uploaded', mime_type: row.mime_type, byte_size: row.file_size }));
+    return [...dashboardDocs, ...portalDocs];
+  };
+  async function downloadDemoDocument(docId, fileName) {
+    try {
+      const request = indexedDB.open('mehtas-client-files', 1);
+      const db = await new Promise((resolve, reject) => { request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error); });
+      const record = await new Promise((resolve, reject) => { const transaction = db.transaction('files', 'readonly'); const get = transaction.objectStore('files').get(docId); get.onsuccess = () => resolve(get.result); get.onerror = () => reject(get.error); });
+      if (record?.file) { const url = URL.createObjectURL(record.file); const link = document.createElement('a'); link.href = url; link.download = fileName || record.file.name || 'client-document'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); return; }
+      const baseUrl = platformApiUrl(); const token = sessionStorage.getItem(AUTH_TOKEN_KEY); if (!baseUrl || !token || token === 'demo-session') throw new Error('No local file or authenticated file API');
+      const response = await fetch(`${baseUrl.replace(/\/$/, '')}/files/${encodeURIComponent(docId)}/download-url`, { headers:{ Authorization:`Bearer ${token}`, Accept:'application/json' } }); if (!response.ok) throw new Error(`Download URL HTTP ${response.status}`); const result = await response.json(); if (!result.download_url) throw new Error('Missing download URL'); window.open(result.download_url, '_blank', 'noopener');
+    } catch (error) { alert('Download unavailable. For local testing, upload the file again in this browser; for live files, configure the Platform API download endpoint.'); console.warn('Document download failed', error); }
+  }
+  const platformApiUrl = () => {
+    const savedUrl = localStorage.getItem(PLATFORM_API_STORAGE_KEY);
+    if (savedUrl) return savedUrl;
+    const dashboardUrl = apiUrl().replace(/\/webhook\/ca-dashboard\/?$/, '');
+    if (dashboardUrl) return dashboardUrl;
+    return ['localhost', '127.0.0.1'].includes(location.hostname) ? 'http://localhost:3000' : 'https://app-ca-firm-os-prod-a6fc.azurewebsites.net';
+  };
+
+  function setAuthenticated(user) {
+    document.getElementById('auth-overlay').classList.add('hidden');
+    if (user?.tenant_name) document.getElementById('tenant-name').textContent = user.tenant_name;
+    if (user?.email) document.getElementById('admin-email-label').textContent = user.email;
+  }
+
+  function enterDemoMode() {
+    sessionStorage.setItem(AUTH_TOKEN_KEY, 'demo-session');
+    setAuthenticated({ tenant_name: 'Demo Workspace', email: 'demo admin' });
+  }
+
+  function signOut() {
+    sessionStorage.removeItem(AUTH_TOKEN_KEY);
+    document.getElementById('auth-overlay').classList.remove('hidden');
+    document.getElementById('admin-password').value = '';
+  }
+
+  async function signIn(event) {
+    event.preventDefault();
+    const error = document.getElementById('auth-error'); error.classList.remove('visible');
+    const baseUrl = platformApiUrl();
+    if (!baseUrl) {
+      const isLocalPreview = location.protocol === 'file:' || ['localhost', '127.0.0.1'].includes(location.hostname);
+      if (isLocalPreview) { enterDemoMode(); return; }
+      error.textContent = 'Configure the Platform API URL in Settings, or use Preview demo workspace.';
+      error.classList.add('visible');
+      return;
+    }
+    try {
+      const response = await fetch(`${baseUrl.replace(/\/$/, '')}/auth/login`, { method:'POST', headers:{ 'Content-Type':'application/json', Accept:'application/json' }, body:JSON.stringify({ email:document.getElementById('admin-email').value.trim(), password:document.getElementById('admin-password').value }) });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const result = await response.json();
+      if (!result.access_token) throw new Error('Missing access token');
+      sessionStorage.setItem(AUTH_TOKEN_KEY, result.access_token);
+      setAuthenticated(result.user || { email: document.getElementById('admin-email').value.trim() });
+      refreshDashboard();
+    } catch (loginError) { error.textContent = 'Sign in failed. Check credentials and Platform API URL.'; error.classList.add('visible'); console.warn('Admin sign-in failed', loginError); }
+  }
+
+  function initializeAuth() {
+    const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
+    if (token === 'demo-session' && platformApiUrl()) {
+      sessionStorage.removeItem(AUTH_TOKEN_KEY);
+      document.getElementById('auth-overlay').classList.remove('hidden');
+    } else if (token) {
+      setAuthenticated(null);
+    }
+    document.getElementById('admin-login-form').addEventListener('submit', signIn);
+  }
+
+  initializeAuth();
+
+  function toggleTheme() {
+    const dark = document.body.classList.toggle('theme-dark');
+    localStorage.setItem('ca-firm-theme', dark ? 'dark' : 'light');
+    document.getElementById('theme-toggle').textContent = dark ? '☀' : '☾';
+  }
+
+  if (localStorage.getItem('ca-firm-theme') === 'dark') {
+    document.body.classList.add('theme-dark');
+    document.getElementById('theme-toggle').textContent = '☀';
+  }
+
+  function setConnectionState(state, label) {
+    const status = document.getElementById('connection-status');
+    status.className = 'connection-status ' + state;
+    status.textContent = label;
+    const health = document.getElementById('settings-health');
+    if (health) health.textContent = state === 'connected' ? '● n8n connected' : state === 'error' ? '● Connection failed' : '● Dashboard ready';
+  }
+
+  const liveValue = (row, ...keys) => keys.map(key => row?.[key]).find(value => value !== undefined && value !== null && value !== '') || '—';
+  const safe = value => String(value ?? '—').replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char]));
+  const dateValue = value => { const date = new Date(value); return Number.isNaN(date.getTime()) ? safe(value) : date.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' }); };
+  const statusBadge = value => { const status = String(value || 'Pending'); const lower = status.toLowerCase(); const tone = lower.includes('overdue') || lower.includes('urgent') ? 'rose' : lower.includes('paid') || lower.includes('completed') || lower.includes('received') ? 'emerald' : lower.includes('pending') || lower.includes('high') ? 'amber' : 'teal'; return `<span class="badge badge-${tone}">${safe(status)}</span>`; };
+  let activeDashboardData = null;
+  let activeAgentClient = null;
+
+  function renderAgentView(data) {
+    const clients = data.clients?.rows || [];
+    const select = document.getElementById('agent-client-select');
+    if (!select) return;
+    select.innerHTML = clients.length ? clients.map((client, index) => `<option value="${index}">${safe(liveValue(client, 'name', 'client_name'))}</option>`).join('') : '<option value="">No clients in database</option>';
+    activeAgentClient = clients[0] || null;
+    selectAgentClient('0');
+    document.getElementById('chat-input')?.addEventListener('keydown', function(event) { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendTestMessage(); } });
+  }
+
+  function selectAgentClient(index) {
+    const clients = activeDashboardData?.clients?.rows || [];
+    activeAgentClient = clients[Number(index)] || null;
+    const name = activeAgentClient ? liveValue(activeAgentClient, 'name', 'client_name') : 'Select a client';
+    document.getElementById('agent-client-name').textContent = name;
+    document.getElementById('agent-client-meta').textContent = activeAgentClient ? `${liveValue(activeAgentClient, 'phone', 'email')} • Live database context` : 'Client database • Support context';
+    const queries = (activeDashboardData?.query_log || []).filter(row => clientMatches(row, activeAgentClient));
+    document.getElementById('chat-messages').innerHTML = queries.length ? queries.slice(-10).map(row => `<div class="msg msg-client"><div class="msg-bubble">${safe(liveValue(row, 'question', 'message', 'query'))}</div><div class="msg-meta">Client • ${dateValue(liveValue(row, 'timestamp', 'created_at'))}</div></div><div class="msg msg-ai"><div class="msg-bubble">${safe(liveValue(row, 'answer', 'response', 'reply'))}</div><div class="msg-meta">🤖 AI Agent • Database history</div></div>`).join('') : activeAgentClient ? '<div class="msg msg-ai"><div class="msg-bubble">No support history for this client.</div><div class="msg-meta">🤖 AI Agent • Ready</div></div>' : '<div class="text-muted text-sm">No clients are available from the connected database.</div>';
+  }
+
+  function clientMatches(row, client) {
+    const ids = ['client_id', 'customer_id', 'id'];
+    return ids.some(key => row?.[key] && client?.[key] && String(row[key]) === String(client[key])) || (row?.client_name && client?.name && String(row.client_name).toLowerCase() === String(client.name).toLowerCase());
+  }
+
+  function openClientDetail(client) {
+    const data = activeDashboardData || {};
+    const documents = (data.documents?.rows || []).filter(row => clientMatches(row, client));
+    const compliance = (data.deadlines?.rows || []).filter(row => clientMatches(row, client));
+    const invoices = (data.invoices?.rows || []).filter(row => clientMatches(row, client));
+    const tasks = (data.tasks || []).filter(row => clientMatches(row, client) || String(row.client || '').toLowerCase() === String(client.name || client.client_name || '').toLowerCase());
+    const name = liveValue(client, 'name', 'client_name');
+    document.getElementById('detail-name').textContent = name;
+    document.getElementById('detail-contact').textContent = `${liveValue(client, 'phone', 'email')} · ${liveValue(client, 'gstin', 'pan', 'client_id')}`;
+    document.getElementById('detail-avatar').textContent = name.split(' ').map(part => part[0]).join('').slice(0, 2).toUpperCase();
+    document.getElementById('detail-documents').textContent = documents.length;
+    document.getElementById('detail-compliance').textContent = compliance.length;
+    document.getElementById('detail-invoices').textContent = invoices.length;
+    document.getElementById('detail-tasks').textContent = tasks.length;
+    const list = (rows, titleKeys, dateKeys, statusKeys) => rows.length ? rows.slice(0, 8).map(row => `<div class="detail-item"><span>${safe(liveValue(row, ...titleKeys))}<small class="text-muted"> · ${safe(liveValue(row, ...dateKeys))}</small></span>${statusBadge(liveValue(row, ...statusKeys))}</div>`).join('') : '<div class="text-xs text-muted">No records for this client.</div>';
+    document.getElementById('detail-document-list').innerHTML = list(documents, ['document_name', 'name'], ['requested_date', 'received_date'], ['status']);
+    document.getElementById('detail-compliance-list').innerHTML = list(compliance, ['compliance_type', 'title', 'name'], ['due_date'], ['status']);
+    document.getElementById('detail-invoice-list').innerHTML = list(invoices, ['invoice_id', 'id'], ['due_date'], ['status']);
+    document.getElementById('client-detail-modal').classList.add('open');
+  }
+  window.openClientDetail = openClientDetail;
+
+  function closeClientDetail() { document.getElementById('client-detail-modal').classList.remove('open'); }
+
+  function renderLiveViews(data) {
+    activeDashboardData = data;
+    window.__caClientData = data;
+    const clients = data.clients?.rows || [];
+    const compliance = data.deadlines?.rows || [];
+    const documents = data.documents?.rows || [];
+    const leads = data.leads?.rows || [];
+    const invoices = data.invoices?.rows || [];
+    const tasks = data.tasks || [];
+    document.getElementById('view-agent').innerHTML = `<div class="section-title">🤖 AI Client Support Agent</div><div class="section-desc">Live client conversations and Azure AI responses using database context.</div><div class="agent-layout"><div><div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;"><span style="font-size:13px;font-weight:600;">Live Chat</span><span class="ai-badge">🤖 Azure AI</span><select id="agent-client-select" onchange="selectAgentClient(this.value)" style="margin-left:auto;font-size:12px;border:1px solid var(--border);border-radius:6px;padding:4px 8px;"></select></div><div class="chat-container"><div class="chat-header"><span style="font-size:20px;">💬</span><div><div style="font-size:13.5px;font-weight:600;" id="agent-client-name">Select a client</div><div style="font-size:11px;color:var(--text-muted);" id="agent-client-meta">Database context</div></div><div class="ai-indicator" style="margin-left:auto;"></div><span style="font-size:11px;color:var(--emerald);font-weight:600;">AI Active</span></div><div class="chat-messages" id="chat-messages"></div><div class="chat-input-area"><textarea class="chat-input" rows="1" placeholder="Ask about this client’s tax, documents, or compliance…" id="chat-input"></textarea><button class="send-btn" onclick="sendTestMessage()" title="Send message">➤</button></div></div></div><div class="agent-stats-col"><div class="mini-stat"><div class="mini-stat-icon" style="background:var(--teal-light);">👥</div><div class="mini-stat-info"><div class="value">${clients.length}</div><div class="label">Clients in database</div></div></div><div class="mini-stat-icon" style="background:var(--amber-light);">📄</div><div class="mini-stat-info"><div class="value">${documents.length}</div><div class="label">Documents in context</div></div></div><div class="mini-stat"><div class="mini-stat-icon" style="background:var(--emerald-light);">🔔</div><div class="mini-stat-info"><div class="value">${compliance.length}</div><div class="label">Compliance items</div></div></div></div></div>`;
+    document.getElementById('view-reports').innerHTML = `<div class="section-title">📈 Reports & Analytics / रिपोर्ट</div><div class="section-desc">Live metrics calculated from the connected n8n data sources.</div><div class="report-grid"><div class="card"><div class="card-header"><span class="card-title">Practice data</span></div><div class="card-body"><div class="progress-row"><span>Clients</span><div class="progress-track"><span style="width:${Math.min(clients.length, 100)}%"></span></div><strong>${clients.length}</strong></div><div class="progress-row"><span>Compliance</span><div class="progress-track"><span style="width:${data.reports?.complianceRate || 0}%"></span></div><strong>${data.reports?.complianceRate || 0}%</strong></div><div class="progress-row"><span>Open tasks</span><div class="progress-track"><span style="width:${Math.min(tasks.length, 100)}%"></span></div><strong>${tasks.length}</strong></div></div></div><div class="card"><div class="card-header"><span class="card-title">Collections</span></div><div class="card-body"><div class="stat-value">${safe(data.invoices?.collected || '₹0')}</div><div class="text-muted text-sm">Collected from database</div><div class="stat-value" style="margin-top:16px;">${safe(data.invoices?.pending || '₹0')}</div><div class="text-muted text-sm">Outstanding from database</div></div></div><div class="card"><div class="card-header"><span class="card-title">Automation</span></div><div class="card-body"><div class="stat-value">${data.reports?.automationHours || 0}h</div><div class="text-muted text-sm">Calculated automation impact</div><div class="stat-value" style="margin-top:16px;">${leads.length}</div><div class="text-muted text-sm">Leads in database</div></div></div></div><div class="card"><div class="card-header"><span class="card-title">Live summary</span></div><div class="card-body text-muted">Reports update when n8n refreshes the connected data sources.</div></div>`;
+    const dashboardDeadlineRows = compliance.slice(0, 5).map(row => `<div class="deadline-item"><div class="deadline-dot" style="background:var(--amber)"></div><div class="deadline-info"><div class="deadline-name">${safe(liveValue(row, 'compliance_type', 'title', 'name'))}</div><div class="deadline-client">${safe(liveValue(row, 'client_name', 'client_id'))}</div></div><div class="deadline-date soon">${dateValue(liveValue(row, 'due_date'))}</div></div>`).join('');
+    const dashboardClientRows = clients.slice(0, 6).map((row, index) => `<tr><td><div style="font-weight:600">${safe(liveValue(row, 'name', 'client_name'))}</div><div class="text-xs text-muted">${safe(liveValue(row, 'client_id', 'gstin', 'pan'))}</div></td><td><span class="badge badge-teal">${safe(liveValue(row, 'services', 'service', 'client_type'))}</span></td><td class="text-sm text-muted">${dateValue(liveValue(row, 'updated_at', 'created_at'))}</td><td>${statusBadge(liveValue(row, 'pending_document', 'pending_doc'))}</td><td>${statusBadge(liveValue(row, 'status'))}</td><td><button class="btn btn-outline" style="padding:4px 10px;font-size:12px;" onclick="window.openClientDetail(window.__caClientData.clients.rows[${index}])">View</button></td></tr>`).join('');
+    document.getElementById('view-dashboard').innerHTML = `<div class="stats-grid"><div class="stat-card teal"><div class="stat-icon">👥</div><div class="stat-label">Total Clients</div><div class="stat-value">${clients.length}</div><div class="stat-change">${safe(data.clients?.change || 'Live database')}</div></div><div class="stat-card amber"><div class="stat-icon">⏰</div><div class="stat-label">Pending Deadlines</div><div class="stat-value">${data.deadlines?.pending || 0}</div><div class="stat-change">${data.deadlines?.urgent || 0} urgent</div></div><div class="stat-card emerald"><div class="stat-icon">💰</div><div class="stat-label">Fees Collected</div><div class="stat-value">${safe(data.invoices?.collected || '₹0')}</div><div class="stat-change">${safe(data.invoices?.change || 'Live database')}</div></div><div class="stat-card rose"><div class="stat-icon">📬</div><div class="stat-label">Pending Fees</div><div class="stat-value">${safe(data.invoices?.pending || '₹0')}</div><div class="stat-change">${data.invoices?.overdueClients || 0} overdue clients</div></div></div><div class="dash-grid"><div class="card"><div class="card-header"><span>🔥</span><span class="card-title">Upcoming Compliance Deadlines</span><span class="card-action" onclick="switchView('compliance', document.querySelector('[onclick*=compliance]'))">View All →</span></div><div class="card-body">${dashboardDeadlineRows || '<div class="text-muted">No compliance deadlines returned by n8n.</div>'}</div></div><div style="display:flex;flex-direction:column;gap:16px;"><div class="card"><div class="card-header"><span>🤖</span><span class="card-title">Automation Activity</span><span class="ai-badge">Live</span></div><div class="card-body"><div class="progress-row"><span>Active leads</span><div class="progress-track"><span style="width:${Math.min(data.leads?.active || 0, 100)}%"></span></div><strong>${data.leads?.active || 0}</strong></div><div class="progress-row"><span>Pending docs</span><div class="progress-track"><span style="width:${Math.min(data.documents?.pending || 0, 100)}%"></span></div><strong>${data.documents?.pending || 0}</strong></div><div class="progress-row"><span>Open tasks</span><div class="progress-track"><span style="width:${Math.min(tasks.length, 100)}%"></span></div><strong>${tasks.length}</strong></div></div></div><div class="card"><div class="card-header"><span>📊</span><span class="card-title">Lead Pipeline</span><span class="card-action" onclick="switchView('leads', document.querySelector('[onclick*=leads]'))">View →</span></div><div class="card-body"><strong>${data.leads?.active || 0}</strong><span class="text-muted"> active leads from database</span></div></div></div></div><div class="card mt-4" style="margin-top:16px;"><div class="card-header"><span>👥</span><span class="card-title">Recent Client Activity</span><span class="card-action" onclick="switchView('clients', document.querySelector('[onclick*=clients]'))">View All Clients →</span></div><div class="card-body" style="padding:0;overflow-x:auto;"><table><thead><tr><th>Client Name</th><th>Services</th><th>Last Activity</th><th>Pending Doc</th><th>Status</th><th>Action</th></tr></thead><tbody>${dashboardClientRows || '<tr><td colspan="6" class="text-muted">No clients returned by n8n.</td></tr>'}</tbody></table></div></div>`;
+    const clientRows = clients.slice(0, 100).map((row, index) => `<tr><td><strong>${safe(liveValue(row, 'name', 'client_name'))}</strong><div class="text-xs text-muted">${safe(liveValue(row, 'client_id', 'gstin', 'pan'))}</div></td><td>${safe(liveValue(row, 'services', 'service', 'client_type'))}</td><td>${safe(liveValue(row, 'phone', 'email'))}</td><td>${dateValue(liveValue(row, 'created_at', 'created_date', 'updated_at'))}</td><td>${statusBadge(liveValue(row, 'status'))}</td><td><button class="icon-btn" title="View client" onclick="window.openClientDetail(window.__caClientData.clients.rows[${index}])">→</button></td></tr>`).join('');
+    document.querySelectorAll('#view-dashboard .deadline-item').forEach((item, index) => { const row = compliance[index]; if (!row) { item.style.display = 'none'; return; } item.style.display = ''; item.querySelector('.deadline-name').textContent = liveValue(row, 'compliance_type', 'title', 'name'); item.querySelector('.deadline-client').textContent = liveValue(row, 'client_name', 'client_id'); item.querySelector('.deadline-date').textContent = dateValue(liveValue(row, 'due_date')); });
+    document.getElementById('view-clients').innerHTML = `<div class="section-title">👥 Client Management / ग्राहक प्रबंधन</div><div class="section-desc">Live client directory from your n8n-connected Google Sheet.</div><div class="data-toolbar"><input class="form-input" placeholder="Search clients / ग्राहक खोजें…" oninput="filterLiveTable(this, 'live-clients-table')"><button class="btn btn-primary" onclick="openModal()">+ Add Client</button></div><div class="card"><div class="card-body" style="padding:0;overflow-x:auto;"><table id="live-clients-table"><thead><tr><th>Client</th><th>Services</th><th>Contact</th><th>Added / updated</th><th>Status</th><th></th></tr></thead><tbody>${clientRows || '<tr><td colspan="6" class="text-muted">No live clients returned by n8n.</td></tr>'}</tbody></table></div></div>`;
+    const taskRows = tasks.map(row => `<div class="task-row"><input class="task-check" type="checkbox"><div><div class="task-title">${safe(row.title)}</div><div class="task-meta">${safe(row.client)} · ${safe(row.source)} · Due ${dateValue(row.due_date)}</div></div>${statusBadge(row.priority)}<span class="badge badge-teal">Open</span></div>`).join('');
+    document.getElementById('view-tasks').innerHTML = `<div class="section-title">✅ Task Management / कार्य प्रबंधन</div><div class="section-desc">Tasks derived from live compliance, document, and invoice automation.</div><div class="data-toolbar"><button class="filter-tab active">All ${tasks.length}</button><span class="badge badge-rose">${tasks.filter(row => row.priority === 'Urgent').length} urgent</span></div><div class="card"><div class="card-body">${taskRows || '<div class="text-muted">No open tasks returned by n8n.</div>'}</div></div>`;
+    document.getElementById('view-documents').innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;"><div><div class="section-title">📄 Document Collection Hub / दस्तावेज़</div><div class="section-desc">Live document status from Documents_Tracker. n8n reminders continue to run automatically.</div></div><button class="btn btn-primary" onclick="openDocumentModal()">+ Add document</button></div><div class="card"><div class="card-body" style="padding:0;overflow-x:auto;"><table><thead><tr><th>Document</th><th>Client</th><th>Compliance</th><th>Requested</th><th>Status</th><th>Download</th></tr></thead><tbody>${documents.slice(0, 100).map(row => `<tr><td><strong>${safe(liveValue(row, 'document_name', 'name'))}</strong></td><td>${safe(liveValue(row, 'client_name', 'client_id'))}</td><td>${safe(liveValue(row, 'compliance_type'))}</td><td>${dateValue(liveValue(row, 'requested_date'))}</td><td>${statusBadge(liveValue(row, 'status'))}</td><td><button class="btn btn-outline" style="padding:4px 8px;font-size:11px;" onclick="downloadDemoDocument('${safe(liveValue(row, 'doc_id', 'file_id', 'id'))}','${safe(liveValue(row, 'document_name', 'name'))}')">Download</button></td></tr>`).join('') || '<tr><td colspan="6">No live documents returned by n8n.</td></tr>'}</tbody></table></div></div>`;
+    document.getElementById('view-compliance').innerHTML = `<div class="section-title">🔔 Compliance Deadline Tracker / अनुपालन</div><div class="section-desc">Deadlines and filing status from Compliance_Calendar.</div><div class="stats-grid" style="grid-template-columns:repeat(3,1fr);"><div class="inv-stat"><div class="amount" style="color:var(--rose)">${data.deadlines?.urgent || 0}</div><div class="inv-label">Urgent within 7 days</div></div><div class="inv-stat"><div class="amount" style="color:var(--amber)">${compliance.length}</div><div class="inv-label">Open filings</div></div><div class="inv-stat"><div class="amount" style="color:var(--emerald)">${data.reports?.complianceRate || 0}%</div><div class="inv-label">Completion rate</div></div></div><div class="card"><div class="card-body" style="padding:0;overflow-x:auto;"><table><thead><tr><th>Filing</th><th>Client</th><th>Due date</th><th>Status</th></tr></thead><tbody>${compliance.slice(0, 100).map(row => `<tr><td><strong>${safe(liveValue(row, 'compliance_type', 'title', 'name'))}</strong></td><td>${safe(liveValue(row, 'client_name', 'client_id'))}</td><td>${dateValue(liveValue(row, 'due_date'))}</td><td>${statusBadge(liveValue(row, 'status'))}</td></tr>`).join('') || '<tr><td colspan="4">No live compliance items.</td></tr>'}</tbody></table></div></div>`;
+    document.getElementById('view-leads').innerHTML = `<div class="section-title">📊 Lead Pipeline / संभावित ग्राहक</div><div class="section-desc">Live leads from WhatsApp and website qualification workflows.</div><div class="data-toolbar"><span class="badge badge-teal">${data.leads?.active || 0} active leads</span><button class="btn btn-primary" onclick="openLeadModal()">+ Add Lead</button></div><div class="card"><div class="card-body" style="padding:0;overflow-x:auto;"><table><thead><tr><th>Lead</th><th>Requirement</th><th>Source</th><th>Urgency</th><th>Status</th><th>Action</th></tr></thead><tbody>${leads.slice(0, 100).map(row => `<tr><td><strong>${safe(liveValue(row, 'name', 'client_name'))}</strong><div class="text-xs text-muted">${safe(liveValue(row, 'phone', 'email'))}</div></td><td>${safe(liveValue(row, 'requirement', 'service'))}</td><td>${safe(liveValue(row, 'source'))}</td><td>${safe(liveValue(row, 'urgency'))}</td><td>${statusBadge(liveValue(row, 'status', 'qualification'))}</td><td><button class="btn btn-outline" style="padding:4px 8px;font-size:11px;" onclick='convertLeadToClient(${JSON.stringify(row).replace(/'/g, '&#39;')})'>Convert to client</button></td></tr>`).join('') || '<tr><td colspan="6">No live leads returned by n8n.</td></tr>'}</tbody></table></div></div>`;
+    document.getElementById('view-invoices').innerHTML = `<div class="section-title">🧾 Invoice & Fees / फीस</div><div class="section-desc">Live payment status from Invoices and n8n payment confirmation workflows.</div><div class="invoice-summary"><div class="inv-stat"><div class="amount" style="color:var(--emerald)">${safe(data.invoices?.collected)}</div><div class="inv-label">Collected</div></div><div class="inv-stat"><div class="amount" style="color:var(--rose)">${safe(data.invoices?.pending)}</div><div class="inv-label">Outstanding</div></div><div class="inv-stat"><div class="amount" style="color:var(--amber)">${data.invoices?.overdueClients || 0}</div><div class="inv-label">Overdue clients</div></div></div><div class="card"><div class="card-body" style="padding:0;overflow-x:auto;"><table><thead><tr><th>Invoice</th><th>Client</th><th>Amount</th><th>Due date</th><th>Status</th></tr></thead><tbody>${invoices.slice(0, 100).map(row => `<tr><td><strong>${safe(liveValue(row, 'invoice_id', 'id'))}</strong></td><td>${safe(liveValue(row, 'client_name', 'client_id'))}</td><td>${safe(liveValue(row, 'currency'))} ${safe(liveValue(row, 'amount'))}</td><td>${dateValue(liveValue(row, 'due_date'))}</td><td>${statusBadge(liveValue(row, 'status'))}</td></tr>`).join('') || '<tr><td colspan="5">No live invoices returned by n8n.</td></tr>'}</tbody></table></div></div>`;
+    const compRows = compliance.slice(0, 100).map(row => `<tr><td><strong>${safe(liveValue(row, 'compliance_type', 'title', 'name'))}</strong><div class="text-xs text-muted">${safe(liveValue(row, 'client_name', 'client_id'))}</div></td><td>${dateValue(liveValue(row, 'due_date'))}</td><td>${statusBadge(liveValue(row, 'status'))}</td></tr>`).join('');
+    document.getElementById('view-compliance').querySelector('tbody')?.replaceChildren();
+    const complianceTable = document.querySelector('#view-compliance table'); if (complianceTable) complianceTable.querySelector('tbody').innerHTML = compRows || '<tr><td colspan="3">No live compliance items.</td></tr>';
+    const leadRows = leads.slice(0, 100).map(row => `<tr><td><strong>${safe(liveValue(row, 'name', 'client_name'))}</strong><div class="text-xs text-muted">${safe(liveValue(row, 'phone', 'email'))}</div></td><td>${safe(liveValue(row, 'requirement', 'service'))}</td><td>${safe(liveValue(row, 'source'))}</td><td>${statusBadge(liveValue(row, 'status', 'qualification'))}</td></tr>`).join('');
+    const leadTable = document.querySelector('#view-leads table'); if (leadTable) leadTable.querySelector('tbody').innerHTML = leadRows || '<tr><td colspan="4">No live leads.</td></tr>';
+    const invoiceRows = invoices.slice(0, 100).map(row => `<tr><td><strong>${safe(liveValue(row, 'invoice_id', 'id'))}</strong></td><td>${safe(liveValue(row, 'client_name', 'client_id'))}</td><td>${safe(liveValue(row, 'currency'))} ${safe(liveValue(row, 'amount'))}</td><td>${dateValue(liveValue(row, 'due_date'))}</td><td>${statusBadge(liveValue(row, 'status'))}</td></tr>`).join('');
+    const invoiceTable = document.querySelector('#view-invoices table'); if (invoiceTable) invoiceTable.querySelector('tbody').innerHTML = invoiceRows || '<tr><td colspan="5">No live invoices.</td></tr>';
+    const reports = data.reports || {}; document.querySelector('#view-reports .progress-row strong')?.replaceChildren(`${reports.complianceRate || 0}%`);
+  }
+
+  function filterLiveTable(input, tableId) {
+    const query = input.value.toLowerCase(); document.querySelectorAll(`#${tableId} tbody tr`).forEach(row => { row.style.display = row.textContent.toLowerCase().includes(query) ? '' : 'none'; });
+  }
+
+  function applyDashboardData(data) {
+    data = { ...emptyDashboardData, ...data, clients: { ...emptyDashboardData.clients, ...(data.clients || {}) }, deadlines: { ...emptyDashboardData.deadlines, ...(data.deadlines || {}) }, documents: { ...emptyDashboardData.documents, ...(data.documents || {}) }, leads: { ...emptyDashboardData.leads, ...(data.leads || {}) }, invoices: { ...emptyDashboardData.invoices, ...(data.invoices || {}) } };
+    const clients = data.clients || {};
+    const deadlines = data.deadlines || {};
+    const invoices = data.invoices || {};
+    if (data.clients?.rows) renderLiveViews(data);
+    renderAgentView(data);
+  }
+
+  async function refreshDashboard() {
+    const url = apiUrl();
+    const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
+    const platformUrl = platformApiUrl();
+    if (!url && !(token && token !== 'demo-session' && platformUrl)) {
+      const clients = demoClients();
+      const leads = demoLeads();
+      const documents = demoDocuments();
+      applyDashboardData({
+        ...emptyDashboardData,
+        clients: { ...emptyDashboardData.clients, total: clients.length, rows: clients, change: clients.length ? 'Saved in this browser' : 'No local clients' },
+        leads: { ...emptyDashboardData.leads, active: leads.length, rows: leads },
+        documents: { ...emptyDashboardData.documents, pending: documents.length, rows: documents }
+      });
+      setConnectionState('error', 'API not configured');
+      return;
+    }
+    setConnectionState('', 'Connecting…');
+    try {
+      const liveUrl = token && token !== 'demo-session' && platformUrl ? `${platformUrl}/dashboard` : url;
+      const response = await fetch(liveUrl, { headers: { Accept: 'application/json', ...(token && token !== 'demo-session' ? { Authorization: `Bearer ${token}` } : {}) } });
+      if (response.status === 401) {
+        sessionStorage.removeItem(AUTH_TOKEN_KEY);
+        document.getElementById('auth-overlay').classList.remove('hidden');
+        throw new Error('Your admin session expired. Sign in again.');
+      }
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      applyDashboardData(await response.json());
+      setConnectionState('connected', liveUrl === url ? 'n8n connected' : 'Azure connected');
+    } catch (error) {
+      applyDashboardData(emptyDashboardData);
+      setConnectionState('error', error.message === 'Your admin session expired. Sign in again.' ? 'Sign-in required' : 'n8n unavailable');
+      console.warn('Dashboard API unavailable; using demo data.', error);
+    }
+  }
+
+  function saveApiUrl() {
+    const url = document.getElementById('n8n-api-url').value.trim().replace(/\/$/, '');
+    if (url) localStorage.setItem(API_URL_STORAGE_KEY, url);
+    refreshDashboard();
+  }
+
+  function savePlatformApiUrl() {
+    const url = document.getElementById('platform-api-url').value.trim().replace(/\/$/, '');
+    if (url) localStorage.setItem(PLATFORM_API_STORAGE_KEY, url); else localStorage.removeItem(PLATFORM_API_STORAGE_KEY);
+    alert('Platform API URL saved. Sign out and sign in again to test admin authentication.');
+  }
+
+  function clearApiUrl() {
+    localStorage.removeItem(API_URL_STORAGE_KEY);
+    document.getElementById('n8n-api-url').value = '';
+    refreshDashboard();
+  }
+
+  function openLeadModal() { document.getElementById('lead-modal').classList.add('open'); }
+  function closeLeadModal() { document.getElementById('lead-modal').classList.remove('open'); }
+
+  function submitNewLead() {
+    const name = document.getElementById('lead-name').value.trim();
+    const phone = document.getElementById('lead-phone').value.trim();
+    const email = document.getElementById('lead-email').value.trim();
+    const requirement = document.getElementById('lead-requirement').value.trim() || 'General enquiry';
+    if (!name || (!phone && !email)) { alert('Lead name aur phone ya email zaroori hai.'); return; }
+    const lead = { lead_id: `DEMO-LEAD-${Date.now()}`, name, phone, email, requirement, source: 'Dashboard', urgency: 'Medium', status: 'New', created_at: new Date().toISOString() };
+    const saved = [lead, ...demoLeads()];
+    localStorage.setItem('ca-demo-leads', JSON.stringify(saved));
+    closeLeadModal();
+    ['lead-name', 'lead-phone', 'lead-email', 'lead-requirement'].forEach(id => { document.getElementById(id).value = ''; });
+    refreshDashboard();
+    alert('Lead save ho gaya. Qualified hone par Convert to client use karein.');
+  }
+
+  function convertLeadToClient(lead) {
+    const existing = demoClients().some(client => (client.phone && lead.phone && client.phone === lead.phone) || (client.email && lead.email && client.email === lead.email));
+    if (existing) { alert('Ye lead already client list mein hai.'); return; }
+    document.getElementById('client-name').value = lead.name || lead.client_name || '';
+    document.getElementById('client-phone').value = lead.phone || '';
+    document.getElementById('client-email').value = lead.email || '';
+    openModal();
+  }
+
+  function openDocumentModal() {
+    const clients = demoClients();
+    const select = document.getElementById('document-client');
+    select.innerHTML = clients.length ? clients.map(client => `<option value="${safe(client.client_id)}">${safe(client.name || client.client_name)} (${safe(client.client_id)})</option>`).join('') : '<option value="">Connect n8n or add a demo client first</option>';
+    document.getElementById('document-modal').classList.add('open');
+  }
+
+  function closeDocumentModal() { document.getElementById('document-modal').classList.remove('open'); }
+
+  document.getElementById('document-file').addEventListener('change', event => {
+    document.getElementById('document-file-label').textContent = event.target.files[0]?.name || 'Choose PDF, image, or spreadsheet';
+  });
+
+  async function uploadClientDocument() {
+    const file = document.getElementById('document-file').files[0];
+    const clientId = document.getElementById('document-client').value;
+    const documentType = document.getElementById('document-type').value.trim() || 'General document';
+    const fiscalYear = document.getElementById('document-year').value.trim() || '2026-27';
+    if (!file || !clientId) { alert('Client aur file select karein.'); return; }
+    const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
+    const baseUrl = platformApiUrl();
+    if (!baseUrl || !token || token === 'demo-session') {
+      if (baseUrl && (!token || token === 'demo-session')) { alert('Sign in to the Platform API before uploading to Azure.'); return; }
+      const client = demoClients().find(item => item.client_id === clientId);
+      const docId = `DEMO-DOC-${Date.now()}`;
+      const documents = [{ doc_id:docId, client_id:clientId, client_name:client?.name || client?.client_name || 'Client', document_name:file.name, compliance_type:documentType, fiscal_year:fiscalYear, mime_type:file.type, byte_size:file.size, status:'Uploaded', requested_date:new Date().toISOString() }, ...demoDocuments()];
+      localStorage.setItem('ca-demo-documents', JSON.stringify(documents));
+      const request = indexedDB.open('mehtas-client-files', 1);
+      request.onupgradeneeded = () => request.result.createObjectStore('files', { keyPath:'id' });
+      request.onsuccess = () => { const transaction = request.result.transaction('files', 'readwrite'); transaction.objectStore('files').put({ id:docId, file }); };
+      closeDocumentModal();
+      alert('Document demo workspace mein save ho gaya.');
+      refreshDashboard();
+      return;
+    }
+    try {
+      const response = await fetch(`${baseUrl.replace(/\/$/, '')}/customers/${encodeURIComponent(clientId)}/files/upload-url`, { method:'POST', headers:{ 'Content-Type':'application/json', ...(token && token !== 'demo-session' ? { Authorization:`Bearer ${token}` } : {}) }, body:JSON.stringify({ file_name:file.name, mime_type:file.type, fiscal_year:fiscalYear, document_type:documentType }) });
+      if (!response.ok) throw new Error(`Upload URL HTTP ${response.status}`);
+      const upload = await response.json();
+      const uploaded = await fetch(upload.upload_url, { method:'PUT', headers:upload.upload_headers || { 'x-ms-blob-type':'BlockBlob', 'Content-Type':file.type || 'application/octet-stream' }, body:file });
+      if (!uploaded.ok) throw new Error(`Storage upload HTTP ${uploaded.status}`);
+      const completed = await fetch(`${baseUrl.replace(/\/$/, '')}/files/${encodeURIComponent(upload.file_id)}/complete`, { method:'POST', headers:{ Authorization:`Bearer ${token}`, Accept:'application/json' } });
+      if (!completed.ok) throw new Error(`Upload verification HTTP ${completed.status}`);
+      closeDocumentModal(); alert('Document securely upload ho gaya.'); refreshDashboard();
+    } catch (error) { alert('Document upload failed. Platform API aur storage configuration check karein.'); console.warn('Document upload failed', error); }
+  }
+
+  async function submitNewClient() {
+    const name = document.getElementById('client-name').value.trim();
+    const phone = document.getElementById('client-phone').value.trim();
+    const email = document.getElementById('client-email').value.trim();
+    if (!name || (!phone && !email)) { alert('Client name aur phone ya email zaroori hai.'); return; }
+    const platformUrl = platformApiUrl();
+    const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
+    if (platformUrl && token && token !== 'demo-session') {
+      const services = [...document.querySelectorAll('#modal input[type="checkbox"]:checked')].map(input => input.parentElement.textContent.trim()).join(', ');
+      const response = await fetch(`${platformUrl.replace(/\/$/, '')}/customers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ name, phone, email, pan: document.getElementById('client-pan').value.trim(), gstin: document.getElementById('client-gstin').value.trim(), customer_type: document.querySelector('#modal select').value, services })
+      });
+      if (!response.ok) { alert('Client Azure database mein save nahi hua.'); return; }
+      closeModal();
+      alert('Client Azure database mein save ho gaya.');
+      refreshDashboard();
+      return;
+    }
+    const url = apiUrl().replace(/ca-dashboard\/?$/, 'website-lead');
+    if (!url) {
+      const saved = demoClients();
+      const clientType = document.querySelector('#modal select').value;
+      const services = [...document.querySelectorAll('#modal input[type="checkbox"]:checked')].map(input => input.parentElement.textContent.trim()).join(', ');
+      const client = { client_id: `DEMO-${Date.now()}`, name, client_name: name, client_type: clientType, pan: document.getElementById('client-pan').value.trim(), gstin: document.getElementById('client-gstin').value.trim(), phone, email, services, status: 'Active', created_at: new Date().toISOString() };
+      const nextClients = [client, ...saved];
+      localStorage.setItem('ca-demo-clients', JSON.stringify(nextClients));
+      applyDashboardData({ ...emptyDashboardData, clients: { ...emptyDashboardData.clients, total: nextClients.length, rows: nextClients } });
+      closeModal();
+      alert('Client demo workspace mein save ho gaya. n8n connect karne par live Google Sheet mein save hoga.');
+      return;
+    }
+    const payload = new URLSearchParams({
+      name, phone, email,
+      message: `New client: PAN ${document.getElementById('client-pan').value.trim()}, GSTIN ${document.getElementById('client-gstin').value.trim()}`,
+      source: 'CA Dashboard'
+    });
+    const authToken = sessionStorage.getItem(AUTH_TOKEN_KEY);
+    const response = await fetch(url, { method: 'POST', headers: authToken && authToken !== 'demo-session' ? { Authorization: `Bearer ${authToken}` } : {}, body: payload });
+    if (!response.ok) { alert('Client submit nahi hua. n8n execution check karein.'); return; }
+    closeModal();
+    alert('Client n8n workflow mein bhej diya gaya.');
+    refreshDashboard();
+  }
+
+  document.getElementById('n8n-api-url').value = apiUrl();
+  document.getElementById('platform-api-url').value = localStorage.getItem(PLATFORM_API_STORAGE_KEY) || '';
+  refreshDashboard();
+  window.addEventListener('focus', refreshDashboard);
+
+  const topbarTitles = {
+    dashboard: ['Dashboard', '— Aaj ka overview'],
+    agent: ['🤖 AI Support Agent', '— WhatsApp & Email automation'],
+    documents: ['📄 Document Hub', '— Client documents track karein'],
+    compliance: ['🔔 Compliance Tracker', '— GST, ITR, TDS, ROC deadlines'],
+    leads: ['📊 Lead Pipeline', '— AI-powered lead qualification'],
+    invoices: ['🧾 Invoice & Fees', '— Outstanding collections'],
+    clients: ['👥 Client Management', '— All clients'],
+    tasks: ['✅ Tasks', '— Team assignments'],
+    reports: ['📈 Reports', '— Analytics'],
+    settings: ['⚙️ Settings', '— Configuration'],
+  };
+
+  function switchView(viewId, el) {
+    // Update views
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    const target = document.getElementById('view-' + viewId);
+    if (target) target.classList.add('active');
+
+    // Update nav
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    if (el) el.classList.add('active');
+
+    // Update topbar
+    const t = topbarTitles[viewId] || [viewId, ''];
+    document.getElementById('topbar-title').textContent = t[0];
+    document.getElementById('topbar-subtitle').textContent = t[1];
+  }
+
+  function openModal() {
+    document.getElementById('modal').classList.add('open');
+  }
+  function closeModal() {
+    document.getElementById('modal').classList.remove('open');
+  }
+  document.getElementById('modal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+
+  async function sendTestMessage() {
+    const input = document.getElementById('chat-input');
+    const messages = document.getElementById('chat-messages');
+    const text = input.value.trim();
+    if (!text || !activeAgentClient) { if (!activeAgentClient) alert('Select a client first.'); return; }
+
+    // User message
+    const userMsg = document.createElement('div');
+    userMsg.className = 'msg msg-client';
+    userMsg.innerHTML = `<div class="msg-bubble">${safe(text)}</div><div class="msg-meta">${safe(liveValue(activeAgentClient, 'name', 'client_name'))} • Just now</div>`;
+    messages.appendChild(userMsg);
+    input.value = '';
+
+    const typing = document.createElement('div');
+    typing.className = 'msg msg-ai';
+    typing.innerHTML = `<div class="msg-bubble" style="padding:8px 14px;"><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>`;
+    messages.appendChild(typing);
+    messages.scrollTop = messages.scrollHeight;
+
+    try {
+      const baseUrl = platformApiUrl();
+      const dashboardUrl = apiUrl();
+      const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
+      if (baseUrl && (!token || token === 'demo-session')) {
+        sessionStorage.removeItem(AUTH_TOKEN_KEY);
+        document.getElementById('auth-overlay').classList.remove('hidden');
+        throw new Error('Your admin session expired. Sign in again.');
+      }
+      const supportUrl = baseUrl && token && token !== 'demo-session'
+        ? `${baseUrl.replace(/\/$/, '')}/support/chat`
+        : (dashboardUrl.includes('/webhook/ca-dashboard')
+          ? dashboardUrl.replace('/webhook/ca-dashboard', '/webhook/support-chat')
+          : (location.hostname === 'localhost' || location.hostname === '127.0.0.1'
+            ? 'http://localhost:5678/webhook/support-chat'
+            : `${baseUrl.replace(/\/$/, '')}/support/chat`));
+      const response = await fetch(supportUrl, { method:'POST', headers:{ 'Content-Type':'application/json', ...(token && token !== 'demo-session' ? { Authorization:`Bearer ${token}` } : {}) }, body:JSON.stringify({ client_id:liveValue(activeAgentClient, 'client_id', 'id'), client_name:liveValue(activeAgentClient, 'name', 'client_name'), message:text, context:{ phone:liveValue(activeAgentClient, 'phone'), email:liveValue(activeAgentClient, 'email'), gstin:liveValue(activeAgentClient, 'gstin'), pan:liveValue(activeAgentClient, 'pan'), documents:(activeDashboardData.documents?.rows || []).filter(row => clientMatches(row, activeAgentClient)), compliance:(activeDashboardData.deadlines?.rows || []).filter(row => clientMatches(row, activeAgentClient)), invoices:(activeDashboardData.invoices?.rows || []).filter(row => clientMatches(row, activeAgentClient)) } }) });
+      if (response.status === 401) {
+        sessionStorage.removeItem(AUTH_TOKEN_KEY);
+        document.getElementById('auth-overlay').classList.remove('hidden');
+        throw new Error('Your admin session expired. Sign in again.');
+      }
+      if (!response.ok) throw new Error(`Support API HTTP ${response.status}`);
+      const result = await response.json(); const reply = result.reply || result.answer || 'The support workflow returned no reply.';
+      typing.remove(); const aiMsg = document.createElement('div'); aiMsg.className = 'msg msg-ai'; aiMsg.innerHTML = `<div class="msg-bubble">${safe(reply)}</div><div class="msg-meta">🤖 AI Agent • Azure AI • Client database context</div>`; messages.appendChild(aiMsg); messages.scrollTop = messages.scrollHeight;
+    } catch (error) {
+      typing.remove();
+      const aiMsg = document.createElement('div');
+      aiMsg.className = 'msg msg-ai';
+      const sessionExpired = error.message === 'Your admin session expired. Sign in again.';
+      aiMsg.innerHTML = `<div class="msg-bubble">${sessionExpired ? 'Your admin session expired. Please sign in again to continue Azure AI support.' : 'Azure AI support is temporarily unavailable. Check the Platform API connection and try again.'}</div><div class="msg-meta">${sessionExpired ? '⚠️ Sign-in required' : '⚠️ Azure AI connection unavailable'}</div>`;
+      messages.appendChild(aiMsg);
+      console.warn('Support request failed', error);
+    }
+  }
+
+  document.getElementById('chat-input').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendTestMessage(); }
+  });
+
+  document.getElementById('global-search').addEventListener('input', function(e) {
+    const query = e.target.value.trim().toLowerCase();
+    document.querySelectorAll('#view-dashboard tbody tr').forEach(row => {
+      row.style.display = !query || row.textContent.toLowerCase().includes(query) ? '' : 'none';
+    });
+  });
+
+  // Filter tabs
+  document.querySelectorAll('.filter-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      tab.closest('.doc-filters').querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+    });
+  });
+</script>
+</body>
+</html>

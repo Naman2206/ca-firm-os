@@ -1,0 +1,22 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+**/!.env.example
+
+# Local dependencies and generated deployment artifacts
+node_modules/
+platform-api-deploy.zip
+*.zip
+
+# Copilot/Azure session state may contain local paths and deployment metadata
+.copilot-azure/
+
+# Local browser/test artifacts
+*.log
+coverage/
+dist/
+build/
+.DS_Store

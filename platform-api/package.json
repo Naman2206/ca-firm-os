@@ -1,0 +1,24 @@
+{
+  "name": "ca-firm-platform-api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Tenant-scoped Platform API for the CA Firm OS Azure migration",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "check": "node --check src/server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@azure/storage-blob": "^12.27.0",
+    "@azure/identity": "^4.10.0",
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.16.3"
+  }
+}

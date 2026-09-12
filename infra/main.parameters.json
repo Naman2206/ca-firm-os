@@ -1,0 +1,14 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "environmentName": { "value": "ca-firm-os-prod-a6fc" },
+    "location": { "value": "centralindia" },
+    "sessionId": { "value": "a6fccea4-191c-4601-a4ca-2f739f48105e" },
+    "deployedBy": { "value": "Copilot SDK in VS Code" },
+    "createdAt": { "value": "2026-09-12T16:05:32.7887120+05:30" },
+    "resourceGroupName": { "value": "ca-firm-prod-rg" },
+    "deployerObjectId": { "value": "d3974922-fdaa-412d-a8f9-bf6603eb241b" },
+    "corsOrigins": { "value": "https://green-glacier-06e044600.3.azurestaticapps.net,https://witty-grass-0b260ac00.3.azurestaticapps.net" }
+  }
+}

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CA Firm Client Portal</title>
+<style>
+:root{--ink:#102235;--muted:#65788b;--teal:#0ea5c9;--surface:#f4f8fb;--line:#d9e5ee;--success:#087f5b;--danger:#b4233c}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(135deg,#eaf7fb,#f8fafc 55%,#e8f0f6);color:var(--ink);font:15px Arial,sans-serif;min-height:100vh;padding:28px 16px}.portal{max-width:720px;margin:auto}.brand{display:flex;align-items:center;gap:12px;margin-bottom:24px}.logo{width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg,#0ea5c9,#075985);color:white;display:grid;place-items:center;font-weight:700;font-size:17px}.brand strong{display:block;font-size:16px}.brand small{color:var(--muted);font-size:10px;letter-spacing:1px}.panel{background:white;border:1px solid var(--line);border-radius:16px;padding:28px;box-shadow:0 18px 50px rgba(16,34,53,.1)}h1{font-size:25px;margin:0 0 8px}p{color:var(--muted);line-height:1.5;margin:0 0 22px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.field{margin-bottom:15px}.field.full{grid-column:1/-1}label{display:block;font-size:12px;font-weight:700;color:#405568;margin-bottom:6px}input,select,textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:11px 12px;font:inherit;outline:none;background:white}input:focus,select:focus,textarea:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(14,165,201,.12)}textarea{min-height:90px;resize:vertical}.file{border:1.5px dashed #9cb8c9;border-radius:10px;padding:18px;text-align:center;background:var(--surface);cursor:pointer}.file:hover{border-color:var(--teal)}.file input{display:none}.file strong{display:block;margin-bottom:5px}.file span{font-size:12px;color:var(--muted)}button{width:100%;border:0;border-radius:8px;padding:12px;background:var(--teal);color:white;font-weight:700;font-size:14px;cursor:pointer}button:disabled{opacity:.6;cursor:wait}.notice{display:none;border-radius:8px;padding:11px 13px;margin-bottom:16px;font-size:13px}.notice.show{display:block}.notice.success{background:#dff7ed;color:var(--success)}.notice.error{background:#ffe5e8;color:var(--danger)}.privacy{font-size:11px;text-align:center;margin-top:14px;color:#8093a4}@media(max-width:600px){.grid{grid-template-columns:1fr}.field.full{grid-column:auto}.panel{padding:20px}}
+</style>
+</head>
+<body>
+<main class="portal">
+  <div class="brand"><div class="logo">CA</div><div><strong>Mehtas</strong><small>SECURE CLIENT DOCUMENT PORTAL</small></div></div>
+  <section class="panel">
+    <h1>Share your details and documents</h1>
+    <p>Submit your information and upload the documents requested by your CA team.</p>
+    <div class="notice" id="notice"></div>
+    <form id="client-form">
+      <div class="grid">
+        <div class="field"><label for="name">Full name / Business name *</label><input id="name" name="name" required></div>
+        <div class="field"><label for="phone">Phone / WhatsApp *</label><input id="phone" name="phone" required></div>
+        <div class="field"><label for="email">Email</label><input id="email" name="email" type="email"></div>
+        <div class="field"><label for="pan">PAN</label><input id="pan" name="pan" maxlength="10"></div>
+        <div class="field"><label for="gstin">GSTIN</label><input id="gstin" name="gstin"></div>
+        <div class="field"><label for="service">Service required *</label><select id="service" name="service" required><option value="">Select service</option><option>GST Filing</option><option>ITR Filing</option><option>TDS Return</option><option>ROC / MCA</option><option>Audit</option><option>Bookkeeping</option><option>Other</option></select></div>
+        <div class="field full"><label for="message">Additional details</label><textarea id="message" name="message" placeholder="Tell us what you need help with..."></textarea></div>
+        <div class="field full"><label class="file" for="document"><strong>Choose document</strong><span id="file-name">PDF, image, Excel, or Word file up to 10 MB</span><input id="document" name="document" type="file" accept=".pdf,.jpg,.jpeg,.png,.xlsx,.xls,.csv,.doc,.docx"></label></div>
+      </div>
+      <button id="submit" type="submit">Submit securely</button>
+    </form>
+    <div class="privacy">Your details are shared only with your CA firm. Do not upload passwords, OTPs, or card details.</div>
+  </section>
+</main>
+<script>
+const params=new URLSearchParams(location.search);const webhookUrl=localStorage.getItem('ca-client-upload-webhook')||params.get('webhook')||'http://localhost:5678/webhook/client-document-upload';
+const form=document.getElementById('client-form');const file=document.getElementById('document');const fileName=document.getElementById('file-name');const notice=document.getElementById('notice');const submit=document.getElementById('submit');
+file.addEventListener('change',()=>{fileName.textContent=file.files[0]?.name||'PDF, image, Excel, or Word file up to 10 MB'});
+function show(type,text){notice.className=`notice show ${type}`;notice.textContent=text}
+async function saveLocalSubmission(){const selected=file.files[0];const record={id:`LOCAL-${Date.now()}`,name:document.getElementById('name').value,phone:document.getElementById('phone').value,email:document.getElementById('email').value,pan:document.getElementById('pan').value,gstin:document.getElementById('gstin').value,service:document.getElementById('service').value,message:document.getElementById('message').value,file_name:selected?.name||'',file_size:selected?.size||0,mime_type:selected?.type||'application/octet-stream',received_at:new Date().toISOString()};const records=JSON.parse(localStorage.getItem('ca-client-portal-submissions')||'[]');records.unshift(record);localStorage.setItem('ca-client-portal-submissions',JSON.stringify(records));if(selected){const db=await new Promise((resolve,reject)=>{const request=indexedDB.open('mehtas-client-files',1);request.onupgradeneeded=()=>request.result.createObjectStore('files',{keyPath:'id'});request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error)});await new Promise((resolve,reject)=>{const transaction=db.transaction('files','readwrite');transaction.objectStore('files').put({id:record.id,file:selected});transaction.oncomplete=resolve;transaction.onerror=()=>reject(transaction.error)})}form.reset();fileName.textContent='PDF, image, Excel, or Word file up to 10 MB';show('success','Saved locally for testing. Connect n8n to send it to your CA team.');}
+form.addEventListener('submit',async event=>{event.preventDefault();const selected=file.files[0];if(selected&&selected.size>10*1024*1024){show('error','Please choose a file smaller than 10 MB.');return}if(!webhookUrl||webhookUrl.includes('localhost')&&location.hostname!=='localhost'&&location.hostname!=='127.0.0.1'){show('error','The client portal is not connected yet. Please contact your CA team.');return}submit.disabled=true;submit.textContent='Submitting…';const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),12000);try{const response=await fetch(webhookUrl,{method:'POST',body:new FormData(form),signal:controller.signal});if(!response.ok)throw new Error(`HTTP ${response.status}`);form.reset();fileName.textContent='PDF, image, Excel, or Word file up to 10 MB';show('success','Submitted successfully. Your CA team has received your details.')}catch(error){if(location.hostname==='localhost'||location.hostname==='127.0.0.1'){saveLocalSubmission();}else{show('error','Submission failed. Please try again or contact your CA team.');}console.warn(error)}finally{clearTimeout(timeout);submit.disabled=false;submit.textContent='Submit securely'}});
+</script>
+</body>
+</html>

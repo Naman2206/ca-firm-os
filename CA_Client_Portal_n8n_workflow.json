@@ -1,0 +1,76 @@
+{
+  "name": "CA Client Portal - Document Intake",
+  "id": "8f3b8d8a-3b6a-4f47-8cb6-39c2fcb2e001",
+  "nodes": [
+    {
+      "parameters": { "httpMethod": "POST", "path": "client-document-upload", "responseMode": "responseNode", "options": { "binaryData": true, "rawBody": false } },
+      "id": "8f3b8d8a-3b6a-4f47-8cb6-39c2fcb2e002",
+      "name": "Client Portal Submission",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-900, 0]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const item = $input.first(); const body = item.json.body || item.json; const file = item.binary?.document; const valid = !!(body.name && body.phone && body.service); if (!valid) return [{ json: { valid:false, error:'name, phone and service are required' } }]; return [{ json: { valid:true, client_name:String(body.name).trim(), phone:String(body.phone).trim(), email:String(body.email || '').trim(), pan:String(body.pan || '').trim().toUpperCase(), gstin:String(body.gstin || '').trim().toUpperCase(), service:String(body.service).trim(), message:String(body.message || '').trim(), file_name:file?.fileName || '', mime_type:file?.mimeType || '', file_size:file?.fileSize || 0, received_at:new Date().toISOString() }, binary:item.binary }];"
+      },
+      "id": "8f3b8d8a-3b6a-4f47-8cb6-39c2fcb2e003",
+      "name": "Validate Portal Submission",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-680, 0]
+    },
+    {
+      "parameters": { "respondWith": "json", "responseCode": 200, "responseBody": "={{ JSON.stringify({ status: 'received', message: 'Submission received securely' }) }}", "options": { "responseHeaders": { "entries": [{ "name": "Access-Control-Allow-Origin", "value": "*" }] } } },
+      "id": "8f3b8d8a-3b6a-4f47-8cb6-39c2fcb2e004",
+      "name": "Respond to Client",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [-460, 220]
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "upload",
+        "binaryPropertyName": "document",
+        "name": "={{ $json.file_name || 'client-document' }}",
+        "driveId": { "__rl": true, "mode": "list", "value": "My Drive" },
+        "folderId": { "__rl": true, "mode": "id", "value": "GOOGLE_DRIVE_CLIENT_DOCUMENTS_FOLDER_ID" },
+        "options": {}
+      },
+      "id": "8f3b8d8a-3b6a-4f47-8cb6-39c2fcb2e005",
+      "name": "Store Document in Google Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [-240, -120],
+      "credentials": { "googleDriveOAuth2Api": { "id": "GOOGLE_DRIVE_CRED_ID", "name": "Google Drive - CA Firm" } },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "resource": "sheet",
+        "operation": "append",
+        "documentId": { "__rl": true, "mode": "id", "value": "GOOGLE_SHEET_ID_CA_FIRM_DB" },
+        "sheetName": { "__rl": true, "mode": "name", "value": "Client_Portal_Submissions", "cachedResultName": "Client_Portal_Submissions" },
+        "columns": { "mappingMode": "defineBelow", "value": { "client_name": "={{ $json.client_name }}", "phone": "={{ $json.phone }}", "email": "={{ $json.email }}", "pan": "={{ $json.pan }}", "gstin": "={{ $json.gstin }}", "service": "={{ $json.service }}", "message": "={{ $json.message }}", "file_name": "={{ $json.file_name }}", "file_size": "={{ $json.file_size }}", "received_at": "={{ $json.received_at }}", "status": "Received" }, "matchingColumns": [] },
+        "options": {}
+      },
+      "id": "8f3b8d8a-3b6a-4f47-8cb6-39c2fcb2e006",
+      "name": "Log Client Submission",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [-240, 0],
+      "credentials": { "googleSheetsOAuth2Api": { "id": "GOOGLE_SHEETS_CRED_ID", "name": "Google Sheets - CA Firm" } },
+      "onError": "continueErrorOutput"
+    }
+  ],
+  "connections": {
+    "Client Portal Submission": { "main": [[{ "node": "Validate Portal Submission", "type": "main", "index": 0 }]] },
+    "Validate Portal Submission": { "main": [[{ "node": "Respond to Client", "type": "main", "index": 0 }, { "node": "Store Document in Google Drive", "type": "main", "index": 0 }, { "node": "Log Client Submission", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": {},
+  "tags": []
+}

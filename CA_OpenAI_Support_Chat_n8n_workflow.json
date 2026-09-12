@@ -1,0 +1,64 @@
+{
+  "name": "CA Azure AI Client Support Chat",
+  "id": "4d2a9b27-9ed6-4cf0-a4c3-8a0e8f3f1001",
+  "nodes": [
+    {
+      "parameters": { "httpMethod": "POST", "path": "support-chat", "responseMode": "responseNode", "options": {} },
+      "id": "4d2a9b27-9ed6-4cf0-a4c3-8a0e8f3f1002",
+      "name": "Support Chat Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-900, 0]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const body = $json.body || $json; const clientId = String(body.client_id || '').trim(); const message = String(body.message || '').trim(); if (!clientId || !message) return [{ json: { valid:false, reply:'Client and message are required.' } }]; return [{ json: { valid:true, client_id:clientId, message, client_name:String(body.client_name || 'client'), context:JSON.stringify(body.context || {}) } }];"
+      },
+      "id": "4d2a9b27-9ed6-4cf0-a4c3-8a0e8f3f1003",
+      "name": "Prepare Client Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-680, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.PLATFORM_API_URL + '/support/chat' }}",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "x-n8n-service-token", "value": "={{ $env.N8N_SERVICE_TOKEN }}" }] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ client_id: $json.client_id, client_name: $json.client_name, message: $json.message, context: JSON.parse($json.context || '{}') }) }}",
+        "options": {}
+      },
+      "id": "4d2a9b27-9ed6-4cf0-a4c3-8a0e8f3f1004",
+      "name": "Azure AI Support API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-420, 0]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseCode": 200,
+        "responseBody": "={{ JSON.stringify({ reply: $json.reply || 'Support response unavailable.', provider: 'azure-ai' }) }}",
+        "options": { "responseHeaders": { "entries": [{ "name": "Access-Control-Allow-Origin", "value": "*" }, { "name": "Cache-Control", "value": "no-store" }] } }
+      },
+      "id": "4d2a9b27-9ed6-4cf0-a4c3-8a0e8f3f1006",
+      "name": "Return Azure AI Reply",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [-100, 0]
+    }
+  ],
+  "connections": {
+    "Support Chat Webhook": { "main": [[{ "node": "Prepare Client Context", "type": "main", "index": 0 }]] },
+    "Prepare Client Context": { "main": [[{ "node": "Azure AI Support API", "type": "main", "index": 0 }]] },
+    "Azure AI Support API": { "main": [[{ "node": "Return Azure AI Reply", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": {},
+  "tags": []
+}
