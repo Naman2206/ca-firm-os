@@ -1679,7 +1679,7 @@
     const clientId = liveValue(client, 'client_id', 'id');
     if (!baseUrl || !token || token === 'demo-session' || clientId === '—') { alert('Sign in to the live Platform API before creating a client portal link.'); return; }
     try {
-      const response = await fetch(`${baseUrl.replace(/\/$/, '')}/customers/${encodeURIComponent(clientId)}/portal-link`, { method:'POST', headers:{ Authorization:`****** Accept:'application/json' } });
+      const response = await fetch(`${baseUrl.replace(/\/$/, '')}/customers/${encodeURIComponent(clientId)}/portal-link`, { method:'POST', headers:{ Authorization:`Bearer ${token}`, Accept:'application/json' } });
       if (!response.ok) throw new Error(`Portal link HTTP ${response.status}`);
       const result = await response.json();
       await navigator.clipboard.writeText(result.portal_url);
@@ -1817,9 +1817,9 @@
   }
 
   function openDocumentModal() {
-    const clients = demoClients();
+    const clients = activeDashboardData?.clients?.rows || [];
     const select = document.getElementById('document-client');
-    select.innerHTML = clients.length ? clients.map(client => `<option value="${safe(client.client_id)}">${safe(client.name || client.client_name)} (${safe(client.client_id)})</option>`).join('') : '<option value="">Connect n8n or add a demo client first</option>';
+    select.innerHTML = clients.length ? clients.map(client => `<option value="${safe(client.client_id)}">${safe(client.name || client.client_name)} (${safe(client.client_id)})</option>`).join('') : '<option value="">No clients found in Azure database</option>';
     document.getElementById('document-modal').classList.add('open');
   }
 
