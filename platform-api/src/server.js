@@ -41,6 +41,10 @@ function issueToken(user) {
   return jwt.sign({ sub: user.id, tenant_id: user.tenant_id, role: user.role, email: user.email }, jwtSecret, { expiresIn: accessTokenTtl });
 }
 
+function hashPortalToken(token) {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
+
 async function requestAzureAiReply({ clientId, clientName, message, context }) {
   if (!azureAiEndpoint || !azureAiDeployment) throw new Error('Azure AI endpoint or deployment is not configured');
   const authorization = azureAiApiKey
@@ -182,6 +186,78 @@ app.post('/customers', requireAuth, async (request, response) => {
   } catch (error) {
     console.error('Customer creation failed', error);
     return apiError(response, 500, 'Customer could not be created');
+  }
+});
+
+app.post('/customers/:customerId/portal-link', requireAuth, async (request, response) => {
+  if (!requireDatabase(response)) return;
+  const token = crypto.randomBytes(32).toString('base64url');
+  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  try {
+    const result = await database.query(
+      'update customers set portal_token_hash = $1, portal_token_expires_at = $2, updated_at = now() where id = $3 and tenant_id = $4 and status <> \'archived\' returning id',
+      [hashPortalToken(token), expiresAt, request.params.customerId, request.user.tenant_id]
+    );
+    if (!result.rowCount) return apiError(response, 404, 'Customer not found');
+    const portalUrl = String(process.env.CLIENT_PORTAL_URL || 'https://witty-grass-0b260ac00.3.azurestaticapps.net/').replace(/\/$/, '');
+    return response.json({ portal_url: `${portalUrl}/?access=${encodeURIComponent(token)}`, expires_at: expiresAt.toISOString() });
+  } catch (error) {
+    console.error('Client portal link creation failed', error);
+    return apiError(response, 500, 'Client portal link could not be created');
+  }
+});
+
+async function findPortalCustomer(token) {
+  if (!database || !token) return null;
+  const rows = await queryRows(
+    `select id, tenant_id, legal_name, email, phone, gstin, pan
+     from customers
+     where portal_token_hash = $1 and portal_token_expires_at > now() and status = 'active'`,
+    [hashPortalToken(token)]
+  );
+  return rows[0] || null;
+}
+
+app.get('/portal/profile', async (request, response) => {
+  if (!requireDatabase(response)) return;
+  try {
+    const customer = await findPortalCustomer(String(request.query.access || ''));
+    if (!customer) return apiError(response, 401, 'Invalid or expired client portal link');
+    const files = await queryRows(
+      `select id as file_id, original_name, mime_type, byte_size, document_type, fiscal_year, status, created_at
+       from customer_files
+       where tenant_id = $1 and customer_id = $2 and status <> 'deleted'
+       order by created_at desc`,
+      [customer.tenant_id, customer.id]
+    );
+    return response.json({ client: customer, documents: files });
+  } catch (error) {
+    console.error('Client portal profile lookup failed', error);
+    return apiError(response, 500, 'Client portal could not be loaded');
+  }
+});
+
+app.get('/portal/files/:fileId/download-url', async (request, response) => {
+  if (!requireDatabase(response)) return;
+  try {
+    const customer = await findPortalCustomer(String(request.query.access || ''));
+    if (!customer) return apiError(response, 401, 'Invalid or expired client portal link');
+    const rows = await queryRows(
+      `select original_name, mime_type, storage_key
+       from customer_files
+       where id = $1 and tenant_id = $2 and customer_id = $3 and status <> 'deleted'`,
+      [request.params.fileId, customer.tenant_id, customer.id]
+    );
+    if (!rows.length) return apiError(response, 404, 'Document not found');
+    return response.json({
+      download_url: buildBlobSasUrl(rows[0].storage_key, 'r'),
+      file_name: rows[0].original_name,
+      mime_type: rows[0].mime_type,
+      expires_in_seconds: 600
+    });
+  } catch (error) {
+    console.error('Client portal document URL failed', error);
+    return apiError(response, 500, 'Document could not be opened');
   }
 });
 

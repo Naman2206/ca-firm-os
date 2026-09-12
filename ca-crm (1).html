@@ -1497,6 +1497,7 @@
   <div class="modal" style="width:min(680px,calc(100vw - 32px));max-height:90vh;overflow-y:auto;">
     <div style="display:flex;align-items:start;gap:12px;"><div class="client-avatar" id="detail-avatar" style="background:var(--teal);">CL</div><div><div class="modal-title" id="detail-name" style="margin-bottom:3px;">Client</div><div class="text-xs text-muted" id="detail-contact">—</div></div><button class="icon-btn" style="margin-left:auto;" onclick="closeClientDetail()" title="Close">×</button></div>
     <div class="client-detail-grid"><div class="detail-stat"><strong id="detail-documents">0</strong><span>Documents</span></div><div class="detail-stat"><strong id="detail-compliance">0</strong><span>Compliance items</span></div><div class="detail-stat"><strong id="detail-invoices">0</strong><span>Invoices</span></div><div class="detail-stat"><strong id="detail-tasks">0</strong><span>Open tasks</span></div></div>
+    <div style="display:flex;justify-content:flex-end;margin-top:14px;"><button class="btn btn-primary" id="client-portal-link-button">Create client document portal link</button></div>
     <div class="detail-list"><h4>Documents / दस्तावेज़</h4><div id="detail-document-list"></div></div>
     <div class="detail-list"><h4>Compliance / अनुपालन</h4><div id="detail-compliance-list"></div></div>
     <div class="detail-list"><h4>Invoices / फीस</h4><div id="detail-invoice-list"></div></div>
@@ -1664,12 +1665,27 @@
     document.getElementById('detail-invoices').textContent = invoices.length;
     document.getElementById('detail-tasks').textContent = tasks.length;
     const list = (rows, titleKeys, dateKeys, statusKeys) => rows.length ? rows.slice(0, 8).map(row => `<div class="detail-item"><span>${safe(liveValue(row, ...titleKeys))}<small class="text-muted"> · ${safe(liveValue(row, ...dateKeys))}</small></span>${statusBadge(liveValue(row, ...statusKeys))}</div>`).join('') : '<div class="text-xs text-muted">No records for this client.</div>';
-    document.getElementById('detail-document-list').innerHTML = list(documents, ['document_name', 'name'], ['requested_date', 'received_date'], ['status']);
+    document.getElementById('detail-document-list').innerHTML = documents.length ? documents.slice(0, 8).map(row => `<div class="detail-item"><span>${safe(liveValue(row, 'document_name', 'name'))}<small class="text-muted"> · ${safe(liveValue(row, 'requested_date', 'received_date'))}</small></span><button class="btn btn-outline" style="padding:3px 8px;font-size:11px;" onclick="downloadDemoDocument('${safe(liveValue(row, 'doc_id', 'file_id', 'id'))}','${safe(liveValue(row, 'document_name', 'name'))}')">Open / download</button></div>`).join('') : '<div class="text-xs text-muted">No records for this client.</div>';
     document.getElementById('detail-compliance-list').innerHTML = list(compliance, ['compliance_type', 'title', 'name'], ['due_date'], ['status']);
     document.getElementById('detail-invoice-list').innerHTML = list(invoices, ['invoice_id', 'id'], ['due_date'], ['status']);
+    document.getElementById('client-portal-link-button').onclick = () => createClientPortalLink(client);
     document.getElementById('client-detail-modal').classList.add('open');
   }
   window.openClientDetail = openClientDetail;
+
+  async function createClientPortalLink(client) {
+    const baseUrl = platformApiUrl();
+    const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
+    const clientId = liveValue(client, 'client_id', 'id');
+    if (!baseUrl || !token || token === 'demo-session' || clientId === '—') { alert('Sign in to the live Platform API before creating a client portal link.'); return; }
+    try {
+      const response = await fetch(`${baseUrl.replace(/\/$/, '')}/customers/${encodeURIComponent(clientId)}/portal-link`, { method:'POST', headers:{ Authorization:`****** Accept:'application/json' } });
+      if (!response.ok) throw new Error(`Portal link HTTP ${response.status}`);
+      const result = await response.json();
+      await navigator.clipboard.writeText(result.portal_url);
+      alert(`Client portal link copied. It expires on ${new Date(result.expires_at).toLocaleDateString('en-IN')}.`);
+    } catch (error) { alert('Could not create the client portal link.'); console.warn('Client portal link failed', error); }
+  }
 
   function closeClientDetail() { document.getElementById('client-detail-modal').classList.remove('open'); }
 

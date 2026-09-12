@@ -43,6 +43,10 @@ create table if not exists customers (
   unique (tenant_id, external_client_id)
 );
 
+alter table customers add column if not exists portal_token_hash text;
+alter table customers add column if not exists portal_token_expires_at timestamptz;
+create index if not exists customers_portal_token_idx on customers(portal_token_hash);
+
 create table if not exists customer_files (
   id uuid primary key default gen_random_uuid(),
   tenant_id uuid not null references tenants(id) on delete cascade,
