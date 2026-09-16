@@ -21,7 +21,7 @@
       <p id="client-summary">Documents shared by your CA team appear here.</p>
       <div id="document-list"></div>
     </section>
-    <section style="margin-bottom:24px;">
+    <section id="client-upload" style="margin-bottom:24px;">
       <h2 style="font-size:18px;margin:0 0 8px;">Upload remaining document</h2>
       <p>Upload a document requested by your CA team. You can upload it without resubmitting your details.</p>
       <label class="file" for="portal-upload"><strong>Choose document to upload</strong><span id="portal-upload-name">PDF, image, Excel, or Word file up to 10 MB</span><input id="portal-upload" type="file" accept=".pdf,.jpg,.jpeg,.png,.xlsx,.xls,.csv,.doc,.docx"></label>
@@ -45,7 +45,7 @@
 </main>
 <script>
 const params=new URLSearchParams(location.search);const accessToken=params.get('access')||'';const platformApiUrl=localStorage.getItem('ca-firm-platform-api-url')||(location.hostname==='localhost'||location.hostname==='127.0.0.1'?'http://localhost:3000':'https://app-ca-firm-os-prod-a6fc.azurewebsites.net');const webhookUrl=localStorage.getItem('ca-client-upload-webhook')||params.get('webhook')||(location.hostname==='localhost'||location.hostname==='127.0.0.1'?'': 'https://ca-firm-n8n.salmonmoss-47aed3f7.centralindia.azurecontainerapps.io/webhook/client-document-upload');
-const form=document.getElementById('client-form');const file=document.getElementById('document');const fileName=document.getElementById('file-name');const portalUpload=document.getElementById('portal-upload');const portalUploadName=document.getElementById('portal-upload-name');const portalUploadSubmit=document.getElementById('portal-upload-submit');const notice=document.getElementById('notice');const submit=document.getElementById('submit');if(accessToken){form.hidden=true}
+const form=document.getElementById('client-form');const file=document.getElementById('document');const fileName=document.getElementById('file-name');const portalUpload=document.getElementById('portal-upload');const portalUploadName=document.getElementById('portal-upload-name');const portalUploadSubmit=document.getElementById('portal-upload-submit');const notice=document.getElementById('notice');const submit=document.getElementById('submit');const uploadSection=document.getElementById('client-upload');const documentSection=document.getElementById('client-documents');uploadSection.parentNode.insertBefore(uploadSection,documentSection);if(accessToken){form.hidden=true}
 file.addEventListener('change',()=>{fileName.textContent=file.files[0]?.name||'PDF, image, Excel, or Word file up to 10 MB'});
 portalUpload.addEventListener('change',()=>{portalUploadName.textContent=portalUpload.files[0]?.name||'PDF, image, Excel, or Word file up to 10 MB'});
 function show(type,text){notice.className=`notice show ${type}`;notice.textContent=text}
