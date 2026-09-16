@@ -121,6 +121,18 @@ function extractLabeledAmount(text, labelPattern) {
   return amounts.map(value => value.replace(/[^\d.,]/g, '')).find(value => value.replace(/,/g, '').length >= 3) || null;
 }
 
+function extractDeductionAmount(text) {
+  const normalized = String(text || '').replace(/\s+/g, ' ');
+  const label = /total\s+amount\s+of\s+deductions\s+under\s+section\s+16\s*\[?\s*4\s*\(\s*a\s*\)\s*\+\s*4\s*\(\s*b\s*\)\s*\+\s*4\s*\(\s*c\s*\)\s*\]?/i.exec(normalized);
+  if (!label) return null;
+  const nearbyText = normalized.slice(label.index, label.index + 300);
+  const amounts = nearbyText.match(/[0-9][0-9,]*(?:\.[0-9]{1,2})?/g) || [];
+  const validAmounts = amounts
+    .map(value => value.replace(/,/g, ''))
+    .filter(value => /^\d+\.\d{1,2}$/.test(value));
+  return validAmounts[0] || null;
+}
+
 async function extractDocumentText(blobName, mimeType) {
   if (!documentIntelligenceEndpoint || !documentIntelligenceKey) throw new Error('Azure Document Intelligence is not configured');
   const documentUrl = buildBlobSasUrl(blobName, 'r', 15);
@@ -369,7 +381,8 @@ app.post('/support/chat', requireAuthOrN8n, async (request, response) => {
           labeled_pan: extractLabeledPan(extractedText),
           employee_pan: extractEmployeePan(extractedText),
           gross_total_income: extractLabeledAmount(extractedText, /gross\s+total\s+income\s*(?:\(\s*6\s*\+\s*8\s*\))?/i),
-          total_taxable_income: extractLabeledAmount(extractedText, /total\s+taxable\s+income\s*(?:\(\s*9\s*-\s*11\s*\))?/i)
+          total_taxable_income: extractLabeledAmount(extractedText, /total\s+taxable\s+income\s*(?:\(\s*9\s*-\s*11\s*\))?/i),
+          section_16_deductions: extractDeductionAmount(extractedText)
         }
       };
     }) : [];
@@ -392,8 +405,9 @@ app.post('/support/chat', requireAuthOrN8n, async (request, response) => {
     }
     const askedGrossTotalIncome = /gross\s+total\s+income/i.test(message);
     const askedTotalTaxableIncome = /total\s+taxable\s+income/i.test(message);
-    if (askedGrossTotalIncome || askedTotalTaxableIncome) {
-      const field = askedGrossTotalIncome ? 'gross_total_income' : 'total_taxable_income';
+    const askedSection16Deductions = /total\s+amount\s+of\s+deductions.*section\s*16|deductions\s+under\s+section\s*16/i.test(message);
+    if (askedGrossTotalIncome || askedTotalTaxableIncome || askedSection16Deductions) {
+      const field = askedGrossTotalIncome ? 'gross_total_income' : askedTotalTaxableIncome ? 'total_taxable_income' : 'section_16_deductions';
       const amount = documents.map(document => document.verified_fields?.[field]).find(Boolean);
       if (amount) return response.json({ reply: amount, provider: 'document-grounded-extraction' });
     }
