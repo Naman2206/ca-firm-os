@@ -59,7 +59,7 @@ async function requestAzureAiReply({ clientId, clientName, message, context }) {
       })();
   const system = `You are the India tax and compliance support assistant for Mehtas Chartered Accountants.
 Give concise, plain-language, source-aware answers about Indian GST, Income Tax, TDS/TCS, ITRs, audits, ROC/MCA, and bookkeeping.
-Do not invent laws, deadlines, rates, sections, or sources. Ask a focused question when facts are missing.
+Do not invent laws, deadlines, rates, sections, or sources. Ask a focused question when facts are missing. Keep every answer concise: provide the main answer first, normally in one or two sentences.
 Escalate notices, assessments, appeals, tax planning, disputed classification, penalties, foreign income, crypto, transfer pricing, payroll disputes, and material legal or financial risk to a qualified CA.
 Never request passwords, OTPs, card details, Aadhaar/PAN images in chat, or private API keys. Direct document sharing to the secure portal.
 For document questions, use exact labeled values from the supplied OCR context. If a verified labeled field is present, it overrides any unlabeled or conflicting value elsewhere. For PAN questions, report the verified document PAN exactly as shown and do not substitute the profile PAN.
@@ -85,12 +85,12 @@ Client context: ${JSON.stringify(context || {})}`;
 }
 
 function extractLabeledPan(text) {
-  const normalized = String(text || '');
+  const normalized = String(text || '').replace(/\s+/g, ' ');
   const panPattern = /\b[A-Z]{5}[0-9]{4}[A-Z]\b/i;
-  const labelPattern = /pan\s+of\s+the\s+employee\/specified\s+senior\s+citizen|pan\s+(?:no\.?|number)?/ig;
+  const labelPattern = /pan\s*(?:of\s*)?(?:the\s*)?(?:employee\s*\/\s*specified\s*senior\s*citizen|employee|specified\s*senior\s*citizen)|pan\s*(?:no\.?|number)?/ig;
   let match;
   while ((match = labelPattern.exec(normalized))) {
-    const nearbyText = normalized.slice(match.index, match.index + 250);
+    const nearbyText = normalized.slice(match.index, match.index + 500);
     const pan = nearbyText.match(panPattern);
     if (pan) return pan[0].toUpperCase();
   }
@@ -98,11 +98,18 @@ function extractLabeledPan(text) {
 }
 
 function extractEmployeePan(text) {
-  const normalized = String(text || '');
-  const label = /pan\s+of\s+the\s+employee\s*\/\s*specified\s+senior\s+citizen/i.exec(normalized);
-  if (!label) return null;
-  const pan = normalized.slice(label.index, label.index + 250).match(/\b[A-Z]{5}[0-9]{4}[A-Z]\b/i);
-  return pan ? pan[0].toUpperCase() : null;
+  const normalized = String(text || '').replace(/\s+/g, ' ');
+  const panPattern = /\b[A-Z]{5}[0-9]{4}[A-Z]\b/ig;
+  const candidates = [];
+  let panMatch;
+  while ((panMatch = panPattern.exec(normalized))) {
+    const nearby = normalized.slice(Math.max(0, panMatch.index - 250), panMatch.index + 250);
+    if (/\b(employee|senior\s+citizen)\b/i.test(nearby)) {
+      const employeeIndex = nearby.search(/\b(employee|senior\s+citizen)\b/i);
+      candidates.push({ value: panMatch[0].toUpperCase(), distance: Math.abs(employeeIndex - 250) });
+    }
+  }
+  return candidates.sort((left, right) => left.distance - right.distance)[0]?.value || null;
 }
 
 async function extractDocumentText(blobName, mimeType) {
@@ -356,14 +363,18 @@ app.post('/support/chat', requireAuthOrN8n, async (request, response) => {
     const serverContext = { submitted_profile: customer || request.body?.context || {}, documents };
     const isPanQuestion = /\bpan\b/i.test(message);
     const asksEmployeePan = /employee|senior\s+citizen/i.test(message);
-    const labeledPans = documents.flatMap(document => asksEmployeePan
+    const panDocuments = asksEmployeePan
+      ? [...documents].sort((left, right) => {
+          const formPattern = /form\s*16|12ba/i;
+          return Number(formPattern.test(right.original_name || '')) - Number(formPattern.test(left.original_name || ''));
+        })
+      : documents;
+    const labeledPans = panDocuments.flatMap(document => asksEmployeePan
       ? [document.verified_fields?.employee_pan, document.verified_fields?.labeled_pan]
       : [document.verified_fields?.labeled_pan]).filter(Boolean);
     if (isPanQuestion && labeledPans.length) {
       const uniquePans = [...new Set(labeledPans)];
-      const reply = uniquePans.length === 1
-        ? `The PAN shown in the document is ${uniquePans[0]}.`
-        : `The PAN values shown in the documents are: ${uniquePans.join(', ')}.`;
+      const reply = uniquePans[0];
       return response.json({ reply, provider: 'document-grounded-extraction' });
     }
     const reply = await requestAzureAiReply({ clientId, clientName: customer?.legal_name || clientName, message, context: serverContext });
