@@ -62,6 +62,7 @@ Give concise, plain-language, source-aware answers about Indian GST, Income Tax,
 Do not invent laws, deadlines, rates, sections, or sources. Ask a focused question when facts are missing.
 Escalate notices, assessments, appeals, tax planning, disputed classification, penalties, foreign income, crypto, transfer pricing, payroll disputes, and material legal or financial risk to a qualified CA.
 Never request passwords, OTPs, card details, Aadhaar/PAN images in chat, or private API keys. Direct document sharing to the secure portal.
+For document questions, use exact labeled values from the supplied OCR context. If a verified labeled field is present, it overrides any unlabeled or conflicting value elsewhere. For PAN questions, report the verified document PAN exactly as shown and do not substitute the profile PAN.
 Client ID: ${clientId}
 Client name: ${clientName}
 Client context: ${JSON.stringify(context || {})}`;
@@ -81,6 +82,27 @@ Client context: ${JSON.stringify(context || {})}`;
   const reply = result.choices?.[0]?.message?.content;
   if (!reply) throw new Error('Azure AI returned no reply');
   return reply;
+}
+
+function extractLabeledPan(text) {
+  const normalized = String(text || '');
+  const panPattern = /\b[A-Z]{5}[0-9]{4}[A-Z]\b/i;
+  const labelPattern = /pan\s+of\s+the\s+employee\/specified\s+senior\s+citizen|pan\s+(?:no\.?|number)?/ig;
+  let match;
+  while ((match = labelPattern.exec(normalized))) {
+    const nearbyText = normalized.slice(match.index, match.index + 250);
+    const pan = nearbyText.match(panPattern);
+    if (pan) return pan[0].toUpperCase();
+  }
+  return null;
+}
+
+function extractEmployeePan(text) {
+  const normalized = String(text || '');
+  const label = /pan\s+of\s+the\s+employee\s*\/\s*specified\s+senior\s+citizen/i.exec(normalized);
+  if (!label) return null;
+  const pan = normalized.slice(label.index, label.index + 250).match(/\b[A-Z]{5}[0-9]{4}[A-Z]\b/i);
+  return pan ? pan[0].toUpperCase() : null;
 }
 
 async function extractDocumentText(blobName, mimeType) {
@@ -313,14 +335,37 @@ app.post('/support/chat', requireAuthOrN8n, async (request, response) => {
         'gross income',
         'total income',
         'salary income',
+        'pan of the employee',
+        'pan number',
+        'pan no',
+        'pan',
         'chapter vi-a',
         'deductions'
       ];
       const positions = [...new Set(terms.map(term => searchableText.indexOf(term)).filter(position => position >= 0))].sort((a, b) => a - b);
       const snippets = positions.slice(0, 6).map(position => extractedText.slice(Math.max(0, position - 350), position + 650));
-      return { ...document, extracted_text: (snippets.length ? snippets.join('\n...\n') : extractedText.slice(0, 1200)).slice(0, 5000) };
+      return {
+        ...document,
+        extracted_text: (snippets.length ? snippets.join('\n...\n') : extractedText.slice(0, 1200)).slice(0, 5000),
+        verified_fields: {
+          labeled_pan: extractLabeledPan(extractedText),
+          employee_pan: extractEmployeePan(extractedText)
+        }
+      };
     }) : [];
     const serverContext = { submitted_profile: customer || request.body?.context || {}, documents };
+    const isPanQuestion = /\bpan\b/i.test(message);
+    const asksEmployeePan = /employee|senior\s+citizen/i.test(message);
+    const labeledPans = documents.flatMap(document => asksEmployeePan
+      ? [document.verified_fields?.employee_pan, document.verified_fields?.labeled_pan]
+      : [document.verified_fields?.labeled_pan]).filter(Boolean);
+    if (isPanQuestion && labeledPans.length) {
+      const uniquePans = [...new Set(labeledPans)];
+      const reply = uniquePans.length === 1
+        ? `The PAN shown in the document is ${uniquePans[0]}.`
+        : `The PAN values shown in the documents are: ${uniquePans.join(', ')}.`;
+      return response.json({ reply, provider: 'document-grounded-extraction' });
+    }
     const reply = await requestAzureAiReply({ clientId, clientName: customer?.legal_name || clientName, message, context: serverContext });
     return response.json({ reply, provider: 'azure-ai' });
   } catch (error) {
