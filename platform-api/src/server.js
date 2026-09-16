@@ -374,6 +374,57 @@ app.get('/portal/files/:fileId/download-url', async (request, response) => {
   }
 });
 
+app.post('/portal/files/upload-url', async (request, response) => {
+  if (!requireDatabase(response)) return;
+  const accessToken = String(request.body?.access || '').trim();
+  const fileName = normalizeFileName(request.body?.file_name);
+  const mimeType = String(request.body?.mime_type || 'application/octet-stream');
+  const fiscalYear = String(request.body?.fiscal_year || 'unknown').replace(/[^0-9-]/g, '').slice(0, 9) || 'unknown';
+  const documentType = String(request.body?.document_type || '').trim().slice(0, 100) || null;
+  try {
+    const customer = await findPortalCustomer(accessToken);
+    if (!customer) return apiError(response, 401, 'Invalid or expired client portal link');
+    const blobName = `${customer.tenant_id}/${customer.id}/${fiscalYear}/${crypto.randomUUID()}/${fileName}`;
+    const uploadUrl = buildBlobSasUrl(blobName, 'cw');
+    const file = await database.query(
+      `insert into customer_files (tenant_id, customer_id, storage_provider, storage_bucket, storage_key, original_name, mime_type, document_type, fiscal_year, status)
+       values ($1, $2, 'azure_blob', $3, $4, $5, $6, $7, $8, 'pending_upload') returning id`,
+      [customer.tenant_id, customer.id, process.env.AZURE_STORAGE_CONTAINER || 'client-documents', blobName, fileName, mimeType, documentType, fiscalYear]
+    );
+    return response.status(201).json({ file_id: file.rows[0].id, upload_url: uploadUrl, upload_headers: { 'x-ms-blob-type': 'BlockBlob', 'Content-Type': mimeType }, expires_in_seconds: 600 });
+  } catch (error) {
+    console.error('Portal upload URL creation failed', error);
+    return apiError(response, 500, 'Portal upload URL unavailable');
+  }
+});
+
+app.post('/portal/files/:fileId/complete', async (request, response) => {
+  if (!requireDatabase(response)) return;
+  try {
+    const customer = await findPortalCustomer(String(request.body?.access || '').trim());
+    if (!customer) return apiError(response, 401, 'Invalid or expired client portal link');
+    const rows = await queryRows('select storage_bucket, storage_key from customer_files where id = $1 and tenant_id = $2 and customer_id = $3 and status = \'pending_upload\'', [request.params.fileId, customer.tenant_id, customer.id]);
+    if (!rows.length) return apiError(response, 404, 'Pending upload not found');
+    const blob = blobServiceClient().getContainerClient(rows[0].storage_bucket).getBlobClient(rows[0].storage_key);
+    const properties = await blob.getProperties();
+    await database.query('update customer_files set byte_size = $1, mime_type = coalesce(nullif($2, \'\'), mime_type), status = \'uploaded\', extraction_status = \'processing\', extraction_error = null where id = $3 and tenant_id = $4', [properties.contentLength || 0, properties.contentType || '', request.params.fileId, customer.tenant_id]);
+    let extractionStatus = 'processing';
+    try {
+      const extractedText = await extractDocumentText(rows[0].storage_key, properties.contentType || '');
+      await database.query('update customer_files set extracted_text = $1, extraction_status = \'completed\', extracted_at = now(), extraction_error = null where id = $2 and tenant_id = $3', [extractedText, request.params.fileId, customer.tenant_id]);
+      extractionStatus = 'completed';
+    } catch (extractionError) {
+      await database.query('update customer_files set extraction_status = \'failed\', extraction_error = $1 where id = $2 and tenant_id = $3', [String(extractionError.message || extractionError).slice(0, 1000), request.params.fileId, customer.tenant_id]);
+      console.error('Portal document OCR failed', extractionError);
+      extractionStatus = 'failed';
+    }
+    return response.json({ file_id: request.params.fileId, status: 'uploaded', extraction_status: extractionStatus });
+  } catch (error) {
+    console.error('Portal upload finalization failed', error);
+    return apiError(response, 502, 'Portal document could not be verified');
+  }
+});
+
 app.post('/support/chat', requireAuthOrN8n, async (request, response) => {
   const clientId = String(request.body?.client_id || '').trim();
   const clientName = String(request.body?.client_name || 'client').trim();
