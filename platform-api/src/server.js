@@ -112,6 +112,15 @@ function extractEmployeePan(text) {
   return candidates.sort((left, right) => left.distance - right.distance)[0]?.value || null;
 }
 
+function extractLabeledAmount(text, labelPattern) {
+  const normalized = String(text || '').replace(/\s+/g, ' ');
+  const label = labelPattern.exec(normalized);
+  if (!label) return null;
+  const nearbyText = normalized.slice(label.index, label.index + 300);
+  const amounts = nearbyText.match(/(?:₹|Rs\.?|INR)?\s*[0-9][0-9,]*(?:\.[0-9]{1,2})?/gi) || [];
+  return amounts.map(value => value.replace(/[^\d.,]/g, '')).find(value => value.replace(/,/g, '').length >= 3) || null;
+}
+
 async function extractDocumentText(blobName, mimeType) {
   if (!documentIntelligenceEndpoint || !documentIntelligenceKey) throw new Error('Azure Document Intelligence is not configured');
   const documentUrl = buildBlobSasUrl(blobName, 'r', 15);
@@ -334,11 +343,13 @@ app.post('/support/chat', requireAuthOrN8n, async (request, response) => {
     if (tenantId && !customer) return apiError(response, 404, 'Client not found');
     const documents = tenantId ? (await queryRows('select original_name, document_type, fiscal_year, status, extracted_text, extraction_status, extracted_at, created_at from customer_files where customer_id = $1 and tenant_id = $2 and status <> \'deleted\' order by created_at desc', [clientId, tenantId])).slice(0, 4).map(document => {
       const extractedText = String(document.extracted_text || '');
-      const searchableText = extractedText.toLowerCase();
+      const normalizedText = extractedText.replace(/\s+/g, ' ');
+      const searchableText = normalizedText.toLowerCase();
       const terms = [
         ...message.toLowerCase().split(/[^a-z0-9]+/).filter(term => term.length > 3),
         'total taxable income',
         'gross total income',
+        'gross total income (6+8)',
         'gross income',
         'total income',
         'salary income',
@@ -350,13 +361,15 @@ app.post('/support/chat', requireAuthOrN8n, async (request, response) => {
         'deductions'
       ];
       const positions = [...new Set(terms.map(term => searchableText.indexOf(term)).filter(position => position >= 0))].sort((a, b) => a - b);
-      const snippets = positions.slice(0, 6).map(position => extractedText.slice(Math.max(0, position - 350), position + 650));
+      const snippets = positions.slice(0, 6).map(position => normalizedText.slice(Math.max(0, position - 350), position + 650));
       return {
         ...document,
         extracted_text: (snippets.length ? snippets.join('\n...\n') : extractedText.slice(0, 1200)).slice(0, 5000),
         verified_fields: {
           labeled_pan: extractLabeledPan(extractedText),
-          employee_pan: extractEmployeePan(extractedText)
+          employee_pan: extractEmployeePan(extractedText),
+          gross_total_income: extractLabeledAmount(extractedText, /gross\s+total\s+income\s*(?:\(\s*6\s*\+\s*8\s*\))?/i),
+          total_taxable_income: extractLabeledAmount(extractedText, /total\s+taxable\s+income\s*(?:\(\s*9\s*-\s*11\s*\))?/i)
         }
       };
     }) : [];
@@ -376,6 +389,13 @@ app.post('/support/chat', requireAuthOrN8n, async (request, response) => {
       const uniquePans = [...new Set(labeledPans)];
       const reply = uniquePans[0];
       return response.json({ reply, provider: 'document-grounded-extraction' });
+    }
+    const askedGrossTotalIncome = /gross\s+total\s+income/i.test(message);
+    const askedTotalTaxableIncome = /total\s+taxable\s+income/i.test(message);
+    if (askedGrossTotalIncome || askedTotalTaxableIncome) {
+      const field = askedGrossTotalIncome ? 'gross_total_income' : 'total_taxable_income';
+      const amount = documents.map(document => document.verified_fields?.[field]).find(Boolean);
+      if (amount) return response.json({ reply: amount, provider: 'document-grounded-extraction' });
     }
     const reply = await requestAzureAiReply({ clientId, clientName: customer?.legal_name || clientName, message, context: serverContext });
     return response.json({ reply, provider: 'azure-ai' });
