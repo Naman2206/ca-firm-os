@@ -18,6 +18,8 @@ const database = process.env.DATABASE_URL ? new Pool({ connectionString: process
 const azureAiEndpoint = String(process.env.AZURE_AI_ENDPOINT || '').replace(/\/$/, '');
 const azureAiDeployment = process.env.AZURE_AI_DEPLOYMENT || '';
 const azureAiApiKey = process.env.AZURE_AI_API_KEY || '';
+const documentIntelligenceEndpoint = String(process.env.AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT || '').replace(/\/$/, '');
+const documentIntelligenceKey = process.env.AZURE_DOCUMENT_INTELLIGENCE_KEY || '';
 const azureAiCredential = new DefaultAzureCredential();
 
 if (!jwtSecret) console.warn('JWT_SECRET is not configured; login and protected routes will be unavailable.');
@@ -63,16 +65,47 @@ Never request passwords, OTPs, card details, Aadhaar/PAN images in chat, or priv
 Client ID: ${clientId}
 Client name: ${clientName}
 Client context: ${JSON.stringify(context || {})}`;
-  const response = await fetch(`${azureAiEndpoint}/openai/deployments/${encodeURIComponent(azureAiDeployment)}/chat/completions?api-version=2024-10-21`, {
-    method: 'POST',
-    headers: { ...(await authorization), 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messages: [{ role: 'system', content: system }, { role: 'user', content: message }], temperature: 0.2, max_tokens: 700 })
-  });
+  let response;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    response = await fetch(`${azureAiEndpoint}/openai/deployments/${encodeURIComponent(azureAiDeployment)}/chat/completions?api-version=2024-10-21`, {
+      method: 'POST',
+      headers: { ...(await authorization), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: [{ role: 'system', content: system }, { role: 'user', content: message }], temperature: 0.2, max_tokens: 300 })
+    });
+    if (response.status !== 429 || attempt === 2) break;
+    const retryAfter = Number(response.headers.get('retry-after')) || (attempt + 1) * 5;
+    await new Promise(resolve => setTimeout(resolve, Math.min(retryAfter, 20) * 1000));
+  }
   if (!response.ok) throw new Error(`Azure AI HTTP ${response.status}: ${await response.text()}`);
   const result = await response.json();
   const reply = result.choices?.[0]?.message?.content;
   if (!reply) throw new Error('Azure AI returned no reply');
   return reply;
+}
+
+async function extractDocumentText(blobName, mimeType) {
+  if (!documentIntelligenceEndpoint || !documentIntelligenceKey) throw new Error('Azure Document Intelligence is not configured');
+  const documentUrl = buildBlobSasUrl(blobName, 'r', 15);
+  const analyze = await fetch(`${documentIntelligenceEndpoint}/documentintelligence/documentModels/prebuilt-read:analyze?api-version=2024-11-30`, {
+    method: 'POST',
+    headers: { 'Ocp-Apim-Subscription-Key': documentIntelligenceKey, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ urlSource: documentUrl })
+  });
+  if (!analyze.ok) throw new Error(`Document Intelligence analyze HTTP ${analyze.status}: ${await analyze.text()}`);
+  const operationUrl = analyze.headers.get('operation-location');
+  if (!operationUrl) throw new Error('Document Intelligence did not return an operation URL');
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    const result = await fetch(operationUrl, { headers: { 'Ocp-Apim-Subscription-Key': documentIntelligenceKey } });
+    if (!result.ok) throw new Error(`Document Intelligence result HTTP ${result.status}: ${await result.text()}`);
+    const payload = await result.json();
+    if (payload.status === 'succeeded') {
+      const text = (payload.analyzeResult?.content || '').trim();
+      return text.slice(0, 100000);
+    }
+    if (payload.status === 'failed') throw new Error(payload.error?.message || 'Document Intelligence extraction failed');
+  }
+  throw new Error('Document Intelligence extraction timed out');
 }
 
 function requireAuth(request, response, next) {
@@ -267,7 +300,28 @@ app.post('/support/chat', requireAuthOrN8n, async (request, response) => {
   const message = String(request.body?.message || '').trim();
   if (!clientId || !message) return apiError(response, 400, 'client_id and message are required');
   try {
-    const reply = await requestAzureAiReply({ clientId, clientName, message, context: request.body?.context });
+    const tenantId = request.user?.tenant_id;
+    const customer = tenantId ? (await queryRows('select id, legal_name, customer_type, pan, gstin, email, phone, metadata, created_at, updated_at from customers where id = $1 and tenant_id = $2 and status <> \'archived\'', [clientId, tenantId]))[0] : null;
+    if (tenantId && !customer) return apiError(response, 404, 'Client not found');
+    const documents = tenantId ? (await queryRows('select original_name, document_type, fiscal_year, status, extracted_text, extraction_status, extracted_at, created_at from customer_files where customer_id = $1 and tenant_id = $2 and status <> \'deleted\' order by created_at desc', [clientId, tenantId])).slice(0, 4).map(document => {
+      const extractedText = String(document.extracted_text || '');
+      const searchableText = extractedText.toLowerCase();
+      const terms = [
+        ...message.toLowerCase().split(/[^a-z0-9]+/).filter(term => term.length > 3),
+        'total taxable income',
+        'gross total income',
+        'gross income',
+        'total income',
+        'salary income',
+        'chapter vi-a',
+        'deductions'
+      ];
+      const positions = [...new Set(terms.map(term => searchableText.indexOf(term)).filter(position => position >= 0))].sort((a, b) => a - b);
+      const snippets = positions.slice(0, 6).map(position => extractedText.slice(Math.max(0, position - 350), position + 650));
+      return { ...document, extracted_text: (snippets.length ? snippets.join('\n...\n') : extractedText.slice(0, 1200)).slice(0, 5000) };
+    }) : [];
+    const serverContext = { submitted_profile: customer || request.body?.context || {}, documents };
+    const reply = await requestAzureAiReply({ clientId, clientName: customer?.legal_name || clientName, message, context: serverContext });
     return response.json({ reply, provider: 'azure-ai' });
   } catch (error) {
     console.error('Azure AI support request failed', error);
@@ -283,7 +337,7 @@ app.get('/dashboard', requireAuth, async (request, response) => {
       queryRows('select id, name, plan_code as plan, status from tenants where id = $1', [tenantId]),
       queryRows('select id as client_id, legal_name as name, external_client_id, customer_type as client_type, pan, gstin, email, phone, status, created_at, updated_at from customers where tenant_id = $1 and status <> \'archived\' order by updated_at desc', [tenantId]),
       queryRows('select id as compliance_id, client_id, client_name, compliance_type, due_date, status, reminder_count, last_reminder_date from compliance_items where tenant_id = $1 order by due_date asc', [tenantId]),
-      queryRows('select id as doc_id, customer_id as client_id, original_name as document_name, document_type as compliance_type, fiscal_year, created_at as requested_date, status, mime_type, byte_size from customer_files where tenant_id = $1 and status <> \'deleted\' order by created_at desc', [tenantId]),
+      queryRows('select id as doc_id, customer_id as client_id, original_name as document_name, document_type as compliance_type, fiscal_year, created_at as requested_date, status, mime_type, byte_size, extraction_status from customer_files where tenant_id = $1 and status <> \'deleted\' order by created_at desc', [tenantId]),
       queryRows('select id as lead_id, name, phone, email, source, requirement, urgency, status, followup_date, created_at from leads where tenant_id = $1 order by created_at desc', [tenantId]),
       queryRows('select id as invoice_id, client_id, client_name, phone, email, service, amount, currency, due_date, status, reminder_count, last_reminder_date, escalated from invoices where tenant_id = $1 order by due_date asc', [tenantId])
     ]);
@@ -333,8 +387,18 @@ app.post('/files/:fileId/complete', requireAuth, async (request, response) => {
     if (!rows.length) return apiError(response, 404, 'Pending upload not found');
     const blob = blobServiceClient().getContainerClient(rows[0].storage_bucket).getBlobClient(rows[0].storage_key);
     const properties = await blob.getProperties();
-    await database.query('update customer_files set byte_size = $1, mime_type = coalesce(nullif($2, \'\'), mime_type), status = \'uploaded\' where id = $3 and tenant_id = $4', [properties.contentLength || 0, properties.contentType || '', request.params.fileId, request.user.tenant_id]);
-    return response.json({ file_id: request.params.fileId, byte_size: properties.contentLength || 0, status: 'uploaded' });
+    await database.query('update customer_files set byte_size = $1, mime_type = coalesce(nullif($2, \'\'), mime_type), status = \'uploaded\', extraction_status = \'processing\', extraction_error = null where id = $3 and tenant_id = $4', [properties.contentLength || 0, properties.contentType || '', request.params.fileId, request.user.tenant_id]);
+    let extractionStatus = 'processing';
+    try {
+      const extractedText = await extractDocumentText(rows[0].storage_key, properties.contentType || '');
+      await database.query('update customer_files set extracted_text = $1, extraction_status = \'completed\', extracted_at = now(), extraction_error = null where id = $2 and tenant_id = $3', [extractedText, request.params.fileId, request.user.tenant_id]);
+      extractionStatus = 'completed';
+    } catch (extractionError) {
+      console.error('Document OCR failed', extractionError);
+      await database.query('update customer_files set extraction_status = \'failed\', extraction_error = $1 where id = $2 and tenant_id = $3', [String(extractionError.message || extractionError).slice(0, 1000), request.params.fileId, request.user.tenant_id]);
+      extractionStatus = 'failed';
+    }
+    return response.json({ file_id: request.params.fileId, byte_size: properties.contentLength || 0, status: 'uploaded', extraction_status: extractionStatus });
   } catch (error) {
     console.error('Upload finalization failed', error);
     return apiError(response, 502, 'Uploaded file could not be verified in Azure Blob Storage');

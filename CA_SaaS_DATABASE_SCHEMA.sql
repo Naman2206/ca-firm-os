@@ -60,7 +60,11 @@ create table if not exists customer_files (
   byte_size bigint not null default 0 check (byte_size >= 0),
   document_type text,
   fiscal_year text,
-  status text not null default 'uploaded' check (status in ('uploaded', 'pending_review', 'approved', 'rejected', 'deleted')),
+  extracted_text text,
+  extraction_status text not null default 'not_started' check (extraction_status in ('not_started', 'processing', 'completed', 'failed')),
+  extracted_at timestamptz,
+  extraction_error text,
+  status text not null default 'uploaded' check (status in ('uploaded', 'pending_upload', 'pending_review', 'approved', 'rejected', 'deleted')),
   checksum text,
   created_at timestamptz not null default now(),
   unique (tenant_id, storage_bucket, storage_key)

@@ -374,6 +374,10 @@
   .auth-copy { color:#64748B;font-size:13px;line-height:1.5;margin-bottom:20px; }
   .auth-error { display:none;background:#FFE4E6;color:#9F1239;border-radius:7px;padding:9px 11px;font-size:12px;margin-bottom:12px; }
   .auth-error.visible { display:block; }
+  .password-field { position:relative; }
+  .password-field .form-input { padding-right:44px; }
+  .password-toggle { position:absolute;right:6px;top:50%;transform:translateY(-50%);width:34px;height:34px;border:0;border-radius:6px;background:transparent;color:#64748B;cursor:pointer;font-size:17px;display:flex;align-items:center;justify-content:center; }
+  .password-toggle:hover,.password-toggle:focus-visible { background:#F1F5F9;color:#0F172A;outline:2px solid #0EA5C9;outline-offset:1px; }
   .tenant-pill { display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:8px;padding:6px 9px;font-size:11px;color:var(--text-secondary); }
   .tenant-dot { width:7px;height:7px;background:var(--emerald);border-radius:50%; }
   .account-menu { display:flex;align-items:center;gap:8px;margin-left:4px; }
@@ -401,7 +405,7 @@
     <div class="auth-copy">Sign in to manage your firm, customers, documents, billing, and automations.</div>
     <div class="auth-error" id="auth-error">Unable to sign in. Check your credentials or configure the platform API.</div>
     <div class="form-group"><label class="form-label" for="admin-email">Work email</label><input class="form-input" id="admin-email" type="email" autocomplete="username" value="namanmehta226@gmail.com" placeholder="admin@yourfirm.com" required></div>
-    <div class="form-group"><label class="form-label" for="admin-password">Password</label><input class="form-input" id="admin-password" type="password" autocomplete="current-password" placeholder="Your password" required></div>
+    <div class="form-group"><label class="form-label" for="admin-password">Password</label><div class="password-field"><input class="form-input" id="admin-password" type="password" autocomplete="current-password" placeholder="Your password" required><button class="password-toggle" id="password-toggle" type="button" aria-label="Show password" aria-pressed="false" title="Show password">◉</button></div></div>
     <button class="btn btn-primary" style="width:100%;justify-content:center;" type="submit">Sign in securely</button>
     <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;" type="button" onclick="enterDemoMode()">Preview demo workspace</button>
     <div style="font-size:11px;color:#94A3B8;text-align:center;margin-top:16px;line-height:1.5;">Production login is verified by your server API. Passwords are never stored in this page.</div>
@@ -1531,9 +1535,16 @@
   };
   async function downloadDemoDocument(docId, fileName) {
     try {
-      const request = indexedDB.open('mehtas-client-files', 1);
-      const db = await new Promise((resolve, reject) => { request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error); });
-      const record = await new Promise((resolve, reject) => { const transaction = db.transaction('files', 'readonly'); const get = transaction.objectStore('files').get(docId); get.onsuccess = () => resolve(get.result); get.onerror = () => reject(get.error); });
+      let record = null;
+      try {
+        const request = indexedDB.open('mehtas-client-files', 1);
+        const db = await new Promise((resolve, reject) => { request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error); });
+        if (db.objectStoreNames.contains('files')) {
+          record = await new Promise((resolve, reject) => { const transaction = db.transaction('files', 'readonly'); const get = transaction.objectStore('files').get(docId); get.onsuccess = () => resolve(get.result); get.onerror = () => reject(get.error); });
+        }
+      } catch (localStorageError) {
+        console.warn('Local document cache unavailable; using the live file API', localStorageError);
+      }
       if (record?.file) { const url = URL.createObjectURL(record.file); const link = document.createElement('a'); link.href = url; link.download = fileName || record.file.name || 'client-document'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); return; }
       const baseUrl = platformApiUrl(); const token = sessionStorage.getItem(AUTH_TOKEN_KEY); if (!baseUrl || !token || token === 'demo-session') throw new Error('No local file or authenticated file API');
       const response = await fetch(`${baseUrl.replace(/\/$/, '')}/files/${encodeURIComponent(docId)}/download-url`, { headers:{ Authorization:`Bearer ${token}`, Accept:'application/json' } }); if (!response.ok) throw new Error(`Download URL HTTP ${response.status}`); const result = await response.json(); if (!result.download_url) throw new Error('Missing download URL'); window.open(result.download_url, '_blank', 'noopener');
@@ -1562,6 +1573,17 @@
     sessionStorage.removeItem(AUTH_TOKEN_KEY);
     document.getElementById('auth-overlay').classList.remove('hidden');
     document.getElementById('admin-password').value = '';
+  }
+
+  function togglePasswordVisibility() {
+    const password = document.getElementById('admin-password');
+    const toggle = document.getElementById('password-toggle');
+    const visible = password.type === 'text';
+    password.type = visible ? 'password' : 'text';
+    toggle.textContent = visible ? '◉' : '○';
+    toggle.setAttribute('aria-label', visible ? 'Show password' : 'Hide password');
+    toggle.setAttribute('title', visible ? 'Show password' : 'Hide password');
+    toggle.setAttribute('aria-pressed', String(!visible));
   }
 
   async function signIn(event) {
@@ -1595,6 +1617,7 @@
       setAuthenticated(null);
     }
     document.getElementById('admin-login-form').addEventListener('submit', signIn);
+    document.getElementById('password-toggle').addEventListener('click', togglePasswordVisibility);
   }
 
   initializeAuth();
@@ -1624,14 +1647,23 @@
   const statusBadge = value => { const status = String(value || 'Pending'); const lower = status.toLowerCase(); const tone = lower.includes('overdue') || lower.includes('urgent') ? 'rose' : lower.includes('paid') || lower.includes('completed') || lower.includes('received') ? 'emerald' : lower.includes('pending') || lower.includes('high') ? 'amber' : 'teal'; return `<span class="badge badge-${tone}">${safe(status)}</span>`; };
   let activeDashboardData = null;
   let activeAgentClient = null;
+  const chatHistoryKey = clientId => `ca-firm-chat-${clientId}`;
+
+  function saveChatHistory(clientId, html) {
+    if (clientId && html) localStorage.setItem(chatHistoryKey(clientId), html);
+  }
+
+  function restoreChatHistory(clientId) {
+    return clientId ? localStorage.getItem(chatHistoryKey(clientId)) : '';
+  }
 
   function renderAgentView(data) {
     const clients = data.clients?.rows || [];
     const select = document.getElementById('agent-client-select');
     if (!select) return;
     select.innerHTML = clients.length ? clients.map((client, index) => `<option value="${index}">${safe(liveValue(client, 'name', 'client_name'))}</option>`).join('') : '<option value="">No clients in database</option>';
-    activeAgentClient = clients[0] || null;
-    selectAgentClient('0');
+    const currentIndex = clients.findIndex(client => String(liveValue(client, 'client_id', 'id')) === String(liveValue(activeAgentClient || {}, 'client_id', 'id')));
+    selectAgentClient(currentIndex >= 0 ? String(currentIndex) : '0');
     document.getElementById('chat-input')?.addEventListener('keydown', function(event) { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendTestMessage(); } });
   }
 
@@ -1642,12 +1674,19 @@
     document.getElementById('agent-client-name').textContent = name;
     document.getElementById('agent-client-meta').textContent = activeAgentClient ? `${liveValue(activeAgentClient, 'phone', 'email')} • Live database context` : 'Client database • Support context';
     const queries = (activeDashboardData?.query_log || []).filter(row => clientMatches(row, activeAgentClient));
-    document.getElementById('chat-messages').innerHTML = queries.length ? queries.slice(-10).map(row => `<div class="msg msg-client"><div class="msg-bubble">${safe(liveValue(row, 'question', 'message', 'query'))}</div><div class="msg-meta">Client • ${dateValue(liveValue(row, 'timestamp', 'created_at'))}</div></div><div class="msg msg-ai"><div class="msg-bubble">${safe(liveValue(row, 'answer', 'response', 'reply'))}</div><div class="msg-meta">🤖 AI Agent • Database history</div></div>`).join('') : activeAgentClient ? '<div class="msg msg-ai"><div class="msg-bubble">No support history for this client.</div><div class="msg-meta">🤖 AI Agent • Ready</div></div>' : '<div class="text-muted text-sm">No clients are available from the connected database.</div>';
+    const savedHistory = restoreChatHistory(liveValue(activeAgentClient || {}, 'client_id', 'id'));
+    document.getElementById('chat-messages').innerHTML = savedHistory || (queries.length ? queries.slice(-10).map(row => `<div class="msg msg-client"><div class="msg-bubble">${safe(liveValue(row, 'question', 'message', 'query'))}</div><div class="msg-meta">Client • ${dateValue(liveValue(row, 'timestamp', 'created_at'))}</div></div><div class="msg msg-ai"><div class="msg-bubble">${safe(liveValue(row, 'answer', 'response', 'reply'))}</div><div class="msg-meta">🤖 AI Agent • Database history</div></div>`).join('') : activeAgentClient ? '<div class="msg msg-ai"><div class="msg-bubble">No support history for this client.</div><div class="msg-meta">🤖 AI Agent • Ready</div></div>' : '<div class="text-muted text-sm">No clients are available from the connected database.</div>');
   }
 
   function clientMatches(row, client) {
     const ids = ['client_id', 'customer_id', 'id'];
     return ids.some(key => row?.[key] && client?.[key] && String(row[key]) === String(client[key])) || (row?.client_name && client?.name && String(row.client_name).toLowerCase() === String(client.name).toLowerCase());
+  }
+
+  function clientDisplayName(row, clients) {
+    const clientId = liveValue(row, 'client_id', 'customer_id');
+    const matchedClient = clients.find(client => ['client_id', 'customer_id', 'id'].some(key => client?.[key] && String(client[key]) === String(clientId)));
+    return matchedClient ? liveValue(matchedClient, 'name', 'client_name') : liveValue(row, 'client_name', 'client_id', 'customer_id');
   }
 
   function openClientDetail(client) {
@@ -1708,7 +1747,7 @@
     document.getElementById('view-clients').innerHTML = `<div class="section-title">👥 Client Management / ग्राहक प्रबंधन</div><div class="section-desc">Live client directory from your n8n-connected Google Sheet.</div><div class="data-toolbar"><input class="form-input" placeholder="Search clients / ग्राहक खोजें…" oninput="filterLiveTable(this, 'live-clients-table')"><button class="btn btn-primary" onclick="openModal()">+ Add Client</button></div><div class="card"><div class="card-body" style="padding:0;overflow-x:auto;"><table id="live-clients-table"><thead><tr><th>Client</th><th>Services</th><th>Contact</th><th>Added / updated</th><th>Status</th><th></th></tr></thead><tbody>${clientRows || '<tr><td colspan="6" class="text-muted">No live clients returned by n8n.</td></tr>'}</tbody></table></div></div>`;
     const taskRows = tasks.map(row => `<div class="task-row"><input class="task-check" type="checkbox"><div><div class="task-title">${safe(row.title)}</div><div class="task-meta">${safe(row.client)} · ${safe(row.source)} · Due ${dateValue(row.due_date)}</div></div>${statusBadge(row.priority)}<span class="badge badge-teal">Open</span></div>`).join('');
     document.getElementById('view-tasks').innerHTML = `<div class="section-title">✅ Task Management / कार्य प्रबंधन</div><div class="section-desc">Tasks derived from live compliance, document, and invoice automation.</div><div class="data-toolbar"><button class="filter-tab active">All ${tasks.length}</button><span class="badge badge-rose">${tasks.filter(row => row.priority === 'Urgent').length} urgent</span></div><div class="card"><div class="card-body">${taskRows || '<div class="text-muted">No open tasks returned by n8n.</div>'}</div></div>`;
-    document.getElementById('view-documents').innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;"><div><div class="section-title">📄 Document Collection Hub / दस्तावेज़</div><div class="section-desc">Live document status from Documents_Tracker. n8n reminders continue to run automatically.</div></div><button class="btn btn-primary" onclick="openDocumentModal()">+ Add document</button></div><div class="card"><div class="card-body" style="padding:0;overflow-x:auto;"><table><thead><tr><th>Document</th><th>Client</th><th>Compliance</th><th>Requested</th><th>Status</th><th>Download</th></tr></thead><tbody>${documents.slice(0, 100).map(row => `<tr><td><strong>${safe(liveValue(row, 'document_name', 'name'))}</strong></td><td>${safe(liveValue(row, 'client_name', 'client_id'))}</td><td>${safe(liveValue(row, 'compliance_type'))}</td><td>${dateValue(liveValue(row, 'requested_date'))}</td><td>${statusBadge(liveValue(row, 'status'))}</td><td><button class="btn btn-outline" style="padding:4px 8px;font-size:11px;" onclick="downloadDemoDocument('${safe(liveValue(row, 'doc_id', 'file_id', 'id'))}','${safe(liveValue(row, 'document_name', 'name'))}')">Download</button></td></tr>`).join('') || '<tr><td colspan="6">No live documents returned by n8n.</td></tr>'}</tbody></table></div></div>`;
+    document.getElementById('view-documents').innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;"><div><div class="section-title">📄 Document Collection Hub / दस्तावेज़</div><div class="section-desc">Live document status from Documents_Tracker. n8n reminders continue to run automatically.</div></div><button class="btn btn-primary" onclick="openDocumentModal()">+ Add document</button></div><div class="card"><div class="card-body" style="padding:0;overflow-x:auto;"><table><thead><tr><th>Document</th><th>Client</th><th>Compliance</th><th>Requested</th><th>Status</th><th>Download</th></tr></thead><tbody>${documents.slice(0, 100).map(row => `<tr><td><strong>${safe(liveValue(row, 'document_name', 'name'))}</strong></td><td>${safe(clientDisplayName(row, clients))}</td><td>${safe(liveValue(row, 'compliance_type'))}</td><td>${dateValue(liveValue(row, 'requested_date'))}</td><td>${statusBadge(liveValue(row, 'status'))}</td><td><button class="btn btn-outline" style="padding:4px 8px;font-size:11px;" onclick="downloadDemoDocument('${safe(liveValue(row, 'doc_id', 'file_id', 'id'))}','${safe(liveValue(row, 'document_name', 'name'))}')">Download</button></td></tr>`).join('') || '<tr><td colspan="6">No live documents returned by n8n.</td></tr>'}</tbody></table></div></div>`;
     document.getElementById('view-compliance').innerHTML = `<div class="section-title">🔔 Compliance Deadline Tracker / अनुपालन</div><div class="section-desc">Deadlines and filing status from Compliance_Calendar.</div><div class="stats-grid" style="grid-template-columns:repeat(3,1fr);"><div class="inv-stat"><div class="amount" style="color:var(--rose)">${data.deadlines?.urgent || 0}</div><div class="inv-label">Urgent within 7 days</div></div><div class="inv-stat"><div class="amount" style="color:var(--amber)">${compliance.length}</div><div class="inv-label">Open filings</div></div><div class="inv-stat"><div class="amount" style="color:var(--emerald)">${data.reports?.complianceRate || 0}%</div><div class="inv-label">Completion rate</div></div></div><div class="card"><div class="card-body" style="padding:0;overflow-x:auto;"><table><thead><tr><th>Filing</th><th>Client</th><th>Due date</th><th>Status</th></tr></thead><tbody>${compliance.slice(0, 100).map(row => `<tr><td><strong>${safe(liveValue(row, 'compliance_type', 'title', 'name'))}</strong></td><td>${safe(liveValue(row, 'client_name', 'client_id'))}</td><td>${dateValue(liveValue(row, 'due_date'))}</td><td>${statusBadge(liveValue(row, 'status'))}</td></tr>`).join('') || '<tr><td colspan="4">No live compliance items.</td></tr>'}</tbody></table></div></div>`;
     document.getElementById('view-leads').innerHTML = `<div class="section-title">📊 Lead Pipeline / संभावित ग्राहक</div><div class="section-desc">Live leads from WhatsApp and website qualification workflows.</div><div class="data-toolbar"><span class="badge badge-teal">${data.leads?.active || 0} active leads</span><button class="btn btn-primary" onclick="openLeadModal()">+ Add Lead</button></div><div class="card"><div class="card-body" style="padding:0;overflow-x:auto;"><table><thead><tr><th>Lead</th><th>Requirement</th><th>Source</th><th>Urgency</th><th>Status</th><th>Action</th></tr></thead><tbody>${leads.slice(0, 100).map(row => `<tr><td><strong>${safe(liveValue(row, 'name', 'client_name'))}</strong><div class="text-xs text-muted">${safe(liveValue(row, 'phone', 'email'))}</div></td><td>${safe(liveValue(row, 'requirement', 'service'))}</td><td>${safe(liveValue(row, 'source'))}</td><td>${safe(liveValue(row, 'urgency'))}</td><td>${statusBadge(liveValue(row, 'status', 'qualification'))}</td><td><button class="btn btn-outline" style="padding:4px 8px;font-size:11px;" onclick='convertLeadToClient(${JSON.stringify(row).replace(/'/g, '&#39;')})'>Convert to client</button></td></tr>`).join('') || '<tr><td colspan="6">No live leads returned by n8n.</td></tr>'}</tbody></table></div></div>`;
     document.getElementById('view-invoices').innerHTML = `<div class="section-title">🧾 Invoice & Fees / फीस</div><div class="section-desc">Live payment status from Invoices and n8n payment confirmation workflows.</div><div class="invoice-summary"><div class="inv-stat"><div class="amount" style="color:var(--emerald)">${safe(data.invoices?.collected)}</div><div class="inv-label">Collected</div></div><div class="inv-stat"><div class="amount" style="color:var(--rose)">${safe(data.invoices?.pending)}</div><div class="inv-label">Outstanding</div></div><div class="inv-stat"><div class="amount" style="color:var(--amber)">${data.invoices?.overdueClients || 0}</div><div class="inv-label">Overdue clients</div></div></div><div class="card"><div class="card-body" style="padding:0;overflow-x:auto;"><table><thead><tr><th>Invoice</th><th>Client</th><th>Amount</th><th>Due date</th><th>Status</th></tr></thead><tbody>${invoices.slice(0, 100).map(row => `<tr><td><strong>${safe(liveValue(row, 'invoice_id', 'id'))}</strong></td><td>${safe(liveValue(row, 'client_name', 'client_id'))}</td><td>${safe(liveValue(row, 'currency'))} ${safe(liveValue(row, 'amount'))}</td><td>${dateValue(liveValue(row, 'due_date'))}</td><td>${statusBadge(liveValue(row, 'status'))}</td></tr>`).join('') || '<tr><td colspan="5">No live invoices returned by n8n.</td></tr>'}</tbody></table></div></div>`;
@@ -1965,6 +2004,7 @@
     userMsg.innerHTML = `<div class="msg-bubble">${safe(text)}</div><div class="msg-meta">${safe(liveValue(activeAgentClient, 'name', 'client_name'))} • Just now</div>`;
     messages.appendChild(userMsg);
     input.value = '';
+    saveChatHistory(liveValue(activeAgentClient, 'client_id', 'id'), messages.innerHTML);
 
     const typing = document.createElement('div');
     typing.className = 'msg msg-ai';
@@ -1996,7 +2036,7 @@
       }
       if (!response.ok) throw new Error(`Support API HTTP ${response.status}`);
       const result = await response.json(); const reply = result.reply || result.answer || 'The support workflow returned no reply.';
-      typing.remove(); const aiMsg = document.createElement('div'); aiMsg.className = 'msg msg-ai'; aiMsg.innerHTML = `<div class="msg-bubble">${safe(reply)}</div><div class="msg-meta">🤖 AI Agent • Azure AI • Client database context</div>`; messages.appendChild(aiMsg); messages.scrollTop = messages.scrollHeight;
+      typing.remove(); const aiMsg = document.createElement('div'); aiMsg.className = 'msg msg-ai'; aiMsg.innerHTML = `<div class="msg-bubble">${safe(reply)}</div><div class="msg-meta">🤖 AI Agent • Azure AI • Client database context</div>`; messages.appendChild(aiMsg); messages.scrollTop = messages.scrollHeight; saveChatHistory(liveValue(activeAgentClient, 'client_id', 'id'), messages.innerHTML);
     } catch (error) {
       typing.remove();
       const aiMsg = document.createElement('div');
@@ -2004,6 +2044,7 @@
       const sessionExpired = error.message === 'Your admin session expired. Sign in again.';
       aiMsg.innerHTML = `<div class="msg-bubble">${sessionExpired ? 'Your admin session expired. Please sign in again to continue Azure AI support.' : 'Azure AI support is temporarily unavailable. Check the Platform API connection and try again.'}</div><div class="msg-meta">${sessionExpired ? '⚠️ Sign-in required' : '⚠️ Azure AI connection unavailable'}</div>`;
       messages.appendChild(aiMsg);
+      saveChatHistory(liveValue(activeAgentClient, 'client_id', 'id'), messages.innerHTML);
       console.warn('Support request failed', error);
     }
   }

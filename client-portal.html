@@ -38,7 +38,7 @@
   </section>
 </main>
 <script>
-const params=new URLSearchParams(location.search);const accessToken=params.get('access')||'';const platformApiUrl=localStorage.getItem('ca-firm-platform-api-url')||(location.hostname==='localhost'||location.hostname==='127.0.0.1'?'http://localhost:3000':'https://app-ca-firm-os-prod-a6fc.azurewebsites.net');const webhookUrl=localStorage.getItem('ca-client-upload-webhook')||params.get('webhook')||'';
+const params=new URLSearchParams(location.search);const accessToken=params.get('access')||'';const platformApiUrl=localStorage.getItem('ca-firm-platform-api-url')||(location.hostname==='localhost'||location.hostname==='127.0.0.1'?'http://localhost:3000':'https://app-ca-firm-os-prod-a6fc.azurewebsites.net');const webhookUrl=localStorage.getItem('ca-client-upload-webhook')||params.get('webhook')||(location.hostname==='localhost'||location.hostname==='127.0.0.1'?'': 'https://ca-firm-n8n.salmonmoss-47aed3f7.centralindia.azurecontainerapps.io/webhook/client-document-upload');
 const form=document.getElementById('client-form');const file=document.getElementById('document');const fileName=document.getElementById('file-name');const notice=document.getElementById('notice');const submit=document.getElementById('submit');
 file.addEventListener('change',()=>{fileName.textContent=file.files[0]?.name||'PDF, image, Excel, or Word file up to 10 MB'});
 function show(type,text){notice.className=`notice show ${type}`;notice.textContent=text}
