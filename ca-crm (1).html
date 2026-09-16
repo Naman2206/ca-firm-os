@@ -1501,7 +1501,7 @@
   <div class="modal" style="width:min(680px,calc(100vw - 32px));max-height:90vh;overflow-y:auto;">
     <div style="display:flex;align-items:start;gap:12px;"><div class="client-avatar" id="detail-avatar" style="background:var(--teal);">CL</div><div><div class="modal-title" id="detail-name" style="margin-bottom:3px;">Client</div><div class="text-xs text-muted" id="detail-contact">—</div></div><button class="icon-btn" style="margin-left:auto;" onclick="closeClientDetail()" title="Close">×</button></div>
     <div class="client-detail-grid"><div class="detail-stat"><strong id="detail-documents">0</strong><span>Documents</span></div><div class="detail-stat"><strong id="detail-compliance">0</strong><span>Compliance items</span></div><div class="detail-stat"><strong id="detail-invoices">0</strong><span>Invoices</span></div><div class="detail-stat"><strong id="detail-tasks">0</strong><span>Open tasks</span></div></div>
-    <div style="display:flex;justify-content:flex-end;margin-top:14px;"><button class="btn btn-primary" id="client-portal-link-button">Create client document portal link</button></div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px;flex-wrap:wrap;"><button class="btn btn-primary" id="client-portal-link-button">Create portal link</button><button class="btn btn-outline" id="client-portal-share-button" hidden>Share link</button></div>
     <div class="detail-list"><h4>Documents / दस्तावेज़</h4><div id="detail-document-list"></div></div>
     <div class="detail-list"><h4>Compliance / अनुपालन</h4><div id="detail-compliance-list"></div></div>
     <div class="detail-list"><h4>Invoices / फीस</h4><div id="detail-invoice-list"></div></div>
@@ -1708,6 +1708,7 @@
     document.getElementById('detail-compliance-list').innerHTML = list(compliance, ['compliance_type', 'title', 'name'], ['due_date'], ['status']);
     document.getElementById('detail-invoice-list').innerHTML = list(invoices, ['invoice_id', 'id'], ['due_date'], ['status']);
     document.getElementById('client-portal-link-button').onclick = () => createClientPortalLink(client);
+    document.getElementById('client-portal-share-button').hidden = true;
     document.getElementById('client-detail-modal').classList.add('open');
   }
   window.openClientDetail = openClientDetail;
@@ -1722,8 +1723,28 @@
       if (!response.ok) throw new Error(`Portal link HTTP ${response.status}`);
       const result = await response.json();
       await navigator.clipboard.writeText(result.portal_url);
+      const shareButton = document.getElementById('client-portal-share-button');
+      shareButton.hidden = false;
+      shareButton.onclick = () => shareClientPortalLink(client, result.portal_url);
       alert(`Client portal link copied. It expires on ${new Date(result.expires_at).toLocaleDateString('en-IN')}.`);
     } catch (error) { alert('Could not create the client portal link.'); console.warn('Client portal link failed', error); }
+  }
+
+  async function shareClientPortalLink(client, portalUrl) {
+    const name = liveValue(client, 'name', 'client_name') || 'Client';
+    const message = `Hello ${name}, please complete your secure CA client portal form and upload documents here: ${portalUrl}`;
+    if (navigator.share) {
+      await navigator.share({ title: 'CA client portal', text: message, url: portalUrl });
+      return;
+    }
+    const choices = [
+      ['WhatsApp', `https://wa.me/?text=${encodeURIComponent(message)}`],
+      ['Email', `mailto:${encodeURIComponent(liveValue(client, 'email') || '')}?subject=${encodeURIComponent('Secure client portal link')}&body=${encodeURIComponent(message)}`],
+      ['SMS / Contact', `sms:${encodeURIComponent(liveValue(client, 'phone') || '')}?body=${encodeURIComponent(message)}`]
+    ];
+    const choice = prompt(`Share ${name}'s portal link: 1 WhatsApp, 2 Email, 3 SMS/Contact`, '1');
+    const selected = choices[Number(choice) - 1];
+    if (selected) window.open(selected[1], '_blank', 'noopener');
   }
 
   function closeClientDetail() { document.getElementById('client-detail-modal').classList.remove('open'); }
@@ -1917,8 +1938,18 @@
         body: JSON.stringify({ name, phone, email, pan: document.getElementById('client-pan').value.trim(), gstin: document.getElementById('client-gstin').value.trim(), customer_type: document.querySelector('#modal select').value, services })
       });
       if (!response.ok) { alert('Client Azure database mein save nahi hua.'); return; }
+      const created = await response.json();
       closeModal();
-      alert('Client Azure database mein save ho gaya.');
+      const client = created.client;
+      const portalResponse = await fetch(`${platformUrl.replace(/\/$/, '')}/customers/${encodeURIComponent(client.client_id)}/portal-link`, { method:'POST', headers:{ Authorization:`****** Accept:'application/json' } });
+      if (!portalResponse.ok) { alert('Client save ho gaya, lekin portal link create nahi hua.'); refreshDashboard(); return; }
+      const portal = await portalResponse.json();
+      await navigator.clipboard.writeText(portal.portal_url);
+      const message = `Hello ${name}, please complete your secure CA client portal form and upload documents here: ${portal.portal_url}`;
+      const shareChoice = prompt('Client add ho gaya. Share: 1 WhatsApp, 2 Email, 3 SMS/Contact, 4 Copy only', '1');
+      if (shareChoice === '1') window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank', 'noopener');
+      else if (shareChoice === '2') window.open(`mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent('Secure client portal link')}&body=${encodeURIComponent(message)}`, '_blank', 'noopener');
+      else if (shareChoice === '3') window.open(`sms:${encodeURIComponent(phone)}?body=${encodeURIComponent(message)}`, '_blank', 'noopener');
       refreshDashboard();
       return;
     }

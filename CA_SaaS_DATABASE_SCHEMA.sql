@@ -45,6 +45,9 @@ create table if not exists customers (
 
 alter table customers add column if not exists portal_token_hash text;
 alter table customers add column if not exists portal_token_expires_at timestamptz;
+alter table customers add column if not exists onboarding_status text not null default 'pending';
+alter table customers drop constraint if exists customers_onboarding_status_check;
+alter table customers add constraint customers_onboarding_status_check check (onboarding_status in ('pending', 'completed'));
 create index if not exists customers_portal_token_idx on customers(portal_token_hash);
 
 create table if not exists customer_files (

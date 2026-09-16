@@ -262,8 +262,8 @@ app.post('/customers', requireAuth, async (request, response) => {
     const result = await database.query(
       `insert into customers (tenant_id, external_client_id, legal_name, customer_type, pan, gstin, email, phone, metadata)
        values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-       returning id as client_id, legal_name as name, external_client_id, customer_type as client_type, pan, gstin, email, phone, status, created_at, updated_at`,
-      [request.user.tenant_id, `WEB-${crypto.randomUUID()}`, name, customerType, pan, gstin, email, phone, JSON.stringify({ services })]
+       returning id as client_id, legal_name as name, external_client_id, customer_type as client_type, pan, gstin, email, phone, status, metadata->>'onboarding_status' as onboarding_status, created_at, updated_at`,
+      [request.user.tenant_id, `WEB-${crypto.randomUUID()}`, name, customerType, pan, gstin, email, phone, JSON.stringify({ services, onboarding_status: 'pending' })]
     );
     return response.status(201).json({ client: result.rows[0] });
   } catch (error) {
@@ -290,10 +290,40 @@ app.post('/customers/:customerId/portal-link', requireAuth, async (request, resp
   }
 });
 
+app.post('/portal/profile', async (request, response) => {
+  if (!requireDatabase(response)) return;
+  const accessToken = String(request.body?.access || '').trim();
+  const name = String(request.body?.name || '').trim();
+  const phone = String(request.body?.phone || '').trim() || null;
+  const email = String(request.body?.email || '').trim().toLowerCase() || null;
+  const pan = String(request.body?.pan || '').trim().toUpperCase() || null;
+  const gstin = String(request.body?.gstin || '').trim().toUpperCase() || null;
+  const service = String(request.body?.service || '').trim() || null;
+  const message = String(request.body?.message || '').trim() || null;
+  if (!accessToken || !name || !phone) return apiError(response, 400, 'access, name and phone are required');
+  try {
+    const customer = await findPortalCustomer(accessToken);
+    if (!customer) return apiError(response, 401, 'Invalid or expired client portal link');
+    const metadata = { ...(customer.metadata || {}), service, message, onboarding_status: 'completed', portal_submitted_at: new Date().toISOString() };
+    const result = await database.query(
+      `update customers
+       set legal_name = $1, phone = $2, email = $3, pan = coalesce($4, pan), gstin = coalesce($5, gstin),
+           metadata = $6, updated_at = now()
+       where id = $7 and tenant_id = $8
+       returning id as client_id, legal_name as name, phone, email, pan, gstin, metadata->>'onboarding_status' as onboarding_status`,
+      [name, phone, email, pan, gstin, JSON.stringify(metadata), customer.id, customer.tenant_id]
+    );
+    return response.json({ client: result.rows[0] });
+  } catch (error) {
+    console.error('Client portal profile submission failed', error);
+    return apiError(response, 500, 'Client details could not be saved');
+  }
+});
+
 async function findPortalCustomer(token) {
   if (!database || !token) return null;
   const rows = await queryRows(
-    `select id, tenant_id, legal_name, email, phone, gstin, pan
+    `select id, tenant_id, legal_name, email, phone, gstin, pan, metadata
      from customers
      where portal_token_hash = $1 and portal_token_expires_at > now() and status = 'active'`,
     [hashPortalToken(token)]
@@ -425,7 +455,7 @@ app.get('/dashboard', requireAuth, async (request, response) => {
   try {
     const [tenant, clients, deadlines, documents, leads, invoices] = await Promise.all([
       queryRows('select id, name, plan_code as plan, status from tenants where id = $1', [tenantId]),
-      queryRows('select id as client_id, legal_name as name, external_client_id, customer_type as client_type, pan, gstin, email, phone, status, created_at, updated_at from customers where tenant_id = $1 and status <> \'archived\' order by updated_at desc', [tenantId]),
+      queryRows('select id as client_id, legal_name as name, external_client_id, customer_type as client_type, pan, gstin, email, phone, status, coalesce(metadata->>\'onboarding_status\', \'pending\') as onboarding_status, created_at, updated_at from customers where tenant_id = $1 and status <> \'archived\' order by updated_at desc', [tenantId]),
       queryRows('select id as compliance_id, client_id, client_name, compliance_type, due_date, status, reminder_count, last_reminder_date from compliance_items where tenant_id = $1 order by due_date asc', [tenantId]),
       queryRows('select id as doc_id, customer_id as client_id, original_name as document_name, document_type as compliance_type, fiscal_year, created_at as requested_date, status, mime_type, byte_size, extraction_status from customer_files where tenant_id = $1 and status <> \'deleted\' order by created_at desc', [tenantId]),
       queryRows('select id as lead_id, name, phone, email, source, requirement, urgency, status, followup_date, created_at from leads where tenant_id = $1 order by created_at desc', [tenantId]),
